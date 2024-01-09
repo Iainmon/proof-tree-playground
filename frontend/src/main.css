@@ -44,3 +44,8 @@
     display: block;
     width: 5vw;
 }
+
+.proof-tree-selected-node {
+    background-color: #ffd5004d;
+    border-radius: 10%;
+}

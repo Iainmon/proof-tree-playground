@@ -16,26 +16,40 @@ function Conclusion({ conclusionSource }) {
     );
 }
 
-export function Node({ tree: {conclusionSource, premises} }) {
+export function Node({ tree: {conclusionSource, premises, shown, selected } }) {
+    if (!shown) {
+        return null;
+    }
 
-    const premiseNodes = premises.map((premise, i) => <Node key={i} tree={premise} />);
     const spacedPremisesNodes = [];
-    for (let i = 0; i < premiseNodes.length; i++) {
-        spacedPremisesNodes.push(premiseNodes[i]);
-        if (i < premiseNodes.length - 1) {
+    for (let i = 0; i < premises.length; i++) {
+
+        if (premises[i].shown === false) continue;
+        const premiseNode = <Node key={i} tree={premises[i]} />;
+        spacedPremisesNodes.push(premiseNode);
+        if (i < premises.length - 1) {
             spacedPremisesNodes.push(<div className="proof-tree-premises-spacer" key={i + 's'} />);
         }
     }
+    if (spacedPremisesNodes.length === 0) {
+        return (
+            <div className="proof-tree-node">
+                <div className={'proof-tree-conclusion' + (selected === true ? ' proof-tree-selected-node' : '')}>
+                    <Conclusion conclusionSource={conclusionSource} />
+                </div>
+            </div>
+        );
+    }
     return (
         <div className="proof-tree-node">
-            <div className="proof-tree-premises">
+            <div className="proof-tree-premises" >
                 {spacedPremisesNodes.map(n => n)}
             </div>
-            <div className="proof-tree-conclusion">
+            <div className={'proof-tree-conclusion' + (selected === true ? ' proof-tree-selected-node' : '')}>
                 <Conclusion conclusionSource={conclusionSource} />
             </div>
         </div>
-    )
+    );
 }
 
 
