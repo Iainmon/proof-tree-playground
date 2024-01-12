@@ -1,3 +1,6 @@
+@import './variables.scss';
+@import './bootstrap.scss';
+
 #root {
   position: absolute;
     z-index: 9;
@@ -21,7 +24,7 @@
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    border-bottom: 1px solid black;
+    border-bottom: 1px solid $body-bg;
 }
 
 .proof-tree-node {
@@ -46,6 +49,5 @@
 }
 
 .proof-tree-selected-node {
-    background-color: #ffd5004d;
-    border-radius: 10%;
+    background-color: $primary;
 }

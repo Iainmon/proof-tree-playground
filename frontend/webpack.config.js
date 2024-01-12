@@ -2,6 +2,25 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
+  devServer: {
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization"
+    },
+    proxy: {
+      '/api': {
+         target: {
+            host: "localhost",
+            protocol: 'http:',
+            port: 3000
+         },
+         pathRewrite: {
+            '^/api': ''
+         }
+      }
+   }
+  },
     mode: "development",
     entry: path.join(__dirname, "src", "main.js"),
     output: {
@@ -10,8 +29,24 @@ module.exports = {
     module: {
         rules: [
           {
-            test: /\.css$/i,
-            use: ["style-loader", "css-loader"],
+            test: /\.(sa|sc|c)ss$/,
+            use: [
+              {
+                loader: "style-loader",
+              },
+              {
+                loader: "css-loader",
+                options: {
+                  sourceMap: true,
+                },
+              },
+              {
+                loader: "sass-loader",
+                options: {
+                  sourceMap: true,
+                },
+              },
+            ],
           },
           {
             test: /\.(?:js|mjs|cjs)$/,

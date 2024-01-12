@@ -1,10 +1,20 @@
-import { putKatex } from './katex.js';
-import './main.css';
-
-import { dragElement } from './drag.js';
-import { Node } from './PTNode.js';
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { useState, useReducer, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { useState, useReducer } from 'react';
+
+import Button from 'react-bootstrap/Button';
+import { Container } from 'react-bootstrap';
+import Form from 'react-bootstrap/Form';
+
+import { putKatex } from './katex.js';
+// import { dragElement } from './drag.js';
+import { Node } from './PTNode.js';
+
+
+import { getProofTree } from './network.js';
+
+import './App.scss';
 
 
 
@@ -75,10 +85,7 @@ function getTreeHelper(tree,path) {
 
 window.getTree = getTree;
 
-function updateTree(tree,path) {
-    const [idx, ...rest] = path;
 
-}
 
 let eventHandlers = {
     keyUpdate: null
@@ -90,6 +97,8 @@ function Handler() {
     const [tree, setTree] = useState(proofTree);
     const [path, setPath] = useState([0]);
     const [, forceUpdate] = useReducer(x => x + 1, 0);
+    const [x, setX] = useState(0);
+    const [y, setY] = useState(0);
 
 
     eventHandlers.keyUpdate = key => {
@@ -141,17 +150,74 @@ function Handler() {
         premise.shown = true;
     }
 
+    function handleNewTree(tree) {
+        setTree(tree);
+        setPath([0]);
+    }
+
+    window.addEventListener("wheel", e => {
+
+        setY(e.deltaY + y);
+        setX(e.deltaX + x);
+
+        forceUpdate();
+        e.preventDefault();
+
+
+    }, { passive: false });
+
     return (
-        <Node tree={tree} />
+        <>
+            <div className="proof-tree" style={{
+                transform: 'translate('+ -x + 'px, ' + -y + 'px) scale(1)'
+            }}>
+                <Node tree={tree} />
+            </div>
+            <hr />
+            <SourceInput handleNewTree={handleNewTree} />
+        </>
     );
 }
 
+function SourceInput({ handleNewTree }) {
+    const [source, setSource] = useState('(((1,2),3),((4,5),(6,7)))');
+    
+    async function handleClick() {
+        const tree = await getProofTree(source);
+        handleNewTree(tree);
+    }
+
+    function onChange(event) {
+        setSource(event.target.value);
+    }
+
+
+    return (
+        <>
+            <label>
+                Expression: 
+                <Form.Control type="text" value={source} onChange={onChange} />
+                <Button variant="info" onClick={handleClick}>Submit</Button>
+            </label>
+        </>
+    );
+}
+
+function App() {
+    return (
+        <Container className="p-3">
+            <Container className="pb-1 p-5 mb-4 rounded-3">
+                <Handler />
+            </Container>
+        </Container>
+    )
+}
 
 async function main() {
 
 
     const root = document.getElementById('doc-root');
-    dragElement(root);
+    // dragElement(root);
 
     // const conclusionTargets = document.querySelectorAll('.proof-tree-conclusion');
     // for (const conclusion of conclusionTargets) {
@@ -162,7 +228,7 @@ async function main() {
 
     const reactRoot = createRoot(root);
     // reactRoot.render(<MyButton />);
-    reactRoot.render(<Handler />);
+    reactRoot.render(<App />);
 }
 
 function keyPress(event) {
@@ -178,10 +244,11 @@ function keyPress(event) {
     if (eventHandlers.keyUpdate !== null) {
         eventHandlers.keyUpdate(key);
     }
+    console.log(event.keyCode);
     
 }
 
-window.onkeyup = keyPress;
+document.addEventListener('keydown',keyPress);
 
 
 window.main = main;

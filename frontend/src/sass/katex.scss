@@ -1,0 +1,12 @@
+@import 'variables.scss';
+@import './bootstrap.scss';
+
+.katex {
+    font: normal $math-font-size KaTeX_Main, Times New Roman, serif;
+    line-height: $math-font-size;
+    text-indent: 0;
+    text-rendering: auto;
+}
+
+@import 'katex/dist/katex.css';
+

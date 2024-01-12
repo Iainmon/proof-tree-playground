@@ -1,6 +1,5 @@
 import katex from 'katex';
-import 'katex/dist/katex.min.css';
-import 'katex/dist/contrib/auto-render';
+import 'katex/contrib/auto-render';
 
 export function putKatex(ks, target) {
     const source = katex.renderToString(ks);
