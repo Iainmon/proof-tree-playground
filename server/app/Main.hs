@@ -1,14 +1,31 @@
-{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
-import Parser
 import Data.Text.Lazy
-import Logic.Proof
-import Syntax
 import Service
+
+import qualified Alan.Lang
 
 import Web.Scotty
 import Network.Wai.Middleware.Cors
+import qualified Network.Wai as WAI
+
+
+
+corsPolicy :: CorsResourcePolicy
+corsPolicy = CorsResourcePolicy
+    { corsOrigins = Nothing
+    , corsMethods = []
+    , corsRequestHeaders = simpleHeaders
+    , corsExposedHeaders = Just simpleResponseHeaders
+    , corsMaxAge = Nothing
+    , corsVaryOrigin = False
+    , corsRequireOrigin = False
+    , corsIgnoreFailures = False
+    }
+
+corsMW :: WAI.Middleware
+corsMW = cors (const $ Just corsPolicy)
+
 
 -- main :: IO ()
 -- main = scotty 3000 $
@@ -21,7 +38,7 @@ import Network.Wai.Middleware.Cors
 
 main :: IO ()
 main = scotty 3000 $ do
-  middleware simpleCors
+  middleware corsMW
   parseService
 
 

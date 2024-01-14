@@ -35,10 +35,10 @@ parseService = post "/parse" $ do
     let tr = pt' (Parser.parse e)
     liftIO $ print tr
     json $ fmap latex tr
-    addHeader "Access-Control-Allow-Origin" "*"
-    addHeader "Access-Control-Allow-Headers" "Content-Type"
-    addHeader "Access-Control-Allow-Methods" "POST, GET, OPTIONS"
-    addHeader "Access-Control-Allow-Credentials" "true"
+    -- addHeader "Access-Control-Allow-Origin" "*"
+    -- addHeader "Access-Control-Allow-Headers" "Content-Type"
+    -- addHeader "Access-Control-Allow-Methods" "POST, GET, OPTIONS"
+    -- addHeader "Access-Control-Allow-Credentials" "true"
 
     -- beam <- captureParam "source"
     -- let e = Parser.parse beam
