@@ -1,0 +1,34 @@
+
+EVar.            Expr ::= Ident ;
+
+SimpleDefAss.    SimpleDef ::= Ident "=" Expr ;
+
+(:[]).           [SimpleDef] ::= SimpleDef ;
+(:).             [SimpleDef] ::= SimpleDef "and" [SimpleDef] ;
+
+ELet.            Expr ::= "let" [SimpleDef] "in" Expr ;
+
+RecDefAss.       RecDef ::= "rec" Ident Ident "=" Expr ;
+
+(:[]).           [RecDef] ::= RecDef ;
+(:).             [RecDef] ::= RecDef "and" [RecDef] ;
+
+ERec.            Expr ::= "let" [RecDef] "in" Expr ;
+
+
+TypeVar.         Type ::= Ident ;
+
+([]).            [Type] ::= ;
+(:).             [Type] ::= Type " " [Type] ;
+
+
+ConstructorDef.  ConstructorDef ::= Ident [Type] ;
+
+(:[]).           [ConstructorDef] ::= ConstructorDef ;
+(:).             [ConstructorDef] ::= ConstructorDef "|" [ConstructorDef] ;
+
+
+DataDefAss.      DataDef ::= Ident "=" [ConstructorDef] ;
+
+(:[]).           [DataDef] ::= DataDef ;
+(:).             [DataDef] ::= DataDef "and" [DataDef] ;

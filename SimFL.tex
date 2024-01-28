@@ -1,0 +1,65 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb}
+\usepackage{proof}
+\usepackage{stmaryrd}
+\usepackage[letterpaper,margin=1cm]{geometry}
+\usepackage[usenames,dvipsnames]{xcolor}
+
+\title{SimFL}
+
+
+\def\code#1{\textsf{#1}}
+\def\codesf#1{\textsf{#1}}
+\def\por{\ | \ }
+\def\rt{\Rightarrow}
+\def\binop{\, \text{\textbullet}\, }
+\def\xj#1#2{\langle #1 \ | \ #2 \rangle}
+\def\envj#1#2#3{D, #1 \vdash #2 \rt #3}
+\def\noenvj#1#2{#1 \rt #2}
+\def\xnf#1#2#3{D,#1 : #2 \rightsquigarrow #3}
+\def\sem#1{\llbracket\, #1 \,\rrbracket}
+\def\closure#1#2#3{(\textsf{\textbf{closure}} \ #1 \to #2,#3)}
+
+
+\begin{document}
+
+\maketitle
+\section*{Syntax}
+
+\begin{gather*}
+\alpha \in \textsc{TypeVar}\qquad T \in \textsc{TypeCon}\qquad C \in \textsc{DataCon}
+\end{gather*}
+\begin{align*}
+datadef\in \textsc{DataDef} ::= \ & \code{data $T$ $\overline{\alpha}$ = $\delta$ }\overline{\langle\texttt{|}\ \delta\rangle}\\
+\delta \in \textsc{ConDef} ::= \ & \code{$C$ $\overline{\tau}$}
+\end{align*}
+
+\begin{align*}
+e \in \textsc{Expr} ::= \ & x \\
+\por & n \\
+\por & C \\
+\por & \code{`$\,c\,$`}\\
+\por & \code{" $\overline{c}$ "}\\
+\por & \code{[ ]}\\
+\por & \code{[}\,e\,\overline{\langle \code{,}\ e\rangle}\,\code{]}\\
+\por & e \binop e\\
+\por & \texttt{($\binop$)}\\
+\por & \code{fun $x$ \texttt{->} $e$}\\
+\por & e \ e\\
+\por & \code{let $d$ } \overline{\langle \code{and} \ d\rangle}\code{ in }\\
+\por & \code{case $e$ of }\texttt{\char`\{} \ \code{$p$ \texttt{->} $e$}\ \overline{\langle \texttt{;} \, \code{$p$ \texttt{->} $e$}\rangle} \ \texttt{\char`\}}\\
+\por & \code{if $e$ then $e$ else $e$}\\
+%
+d \in \textsc{Decl} ::= \ & \code{$f$ = $e$}\\
+\por & \code{rec $f$ $x$ = $e$}\\
+\por & \code{data $T$ = }\code{$C$ $\overline{\tau}$ }\overline{\langle\texttt{|} \ C\ \overline{\tau}\rangle}\\
+\por & {\color{Bittersweet}\code{rec $f$ $x:\tau$ = $e$}}\\
+\por & {\color{Bittersweet}\code{rec $f$ $x$ $\overline{x}$ = $e$}}\\
+\por & {\color{Bittersweet}\code{data $T$ $\overline{\alpha}$ = $\delta$ }\overline{\langle\texttt{|}\ \delta\rangle}}\\
+%
+\binop \in \textsc{BinOp} ::= \ & s\overline{s}
+\end{align*}
+
+
+
+\end{document}

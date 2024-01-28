@@ -47,11 +47,11 @@ instance Latex Expr where
 
 instance Latex Type where
   latex TInt = "\\mathbb{N}"
-  latex (TPair TInt TInt) = "\\mathbb{N} \\times \\mathbb{N}"
+  -- latex (TPair TInt TInt) = "\\mathbb{N} \\times \\mathbb{N}"
   latex (TPair t1 t2) = "(" ++ latex t1 ++ "\\times " ++ latex t2 ++ ")"
 
 instance Latex TJ where
-  latex (TJ e t) = latex e ++ " : " ++ latex t
+  latex (TJ e t) = latex e ++ " \\in " ++ latex t
 
 -- toJson :: Proof TJ -> String
 -- toJson (Proof j ps) = "{ \"conclusion\": \"" ++ latex j ++ "\", \"premises\": [" ++ intercalate "," (map toJson ps) ++ "] }"
