@@ -74,6 +74,7 @@ CaseAlt.         CaseAlt ::= Pattern "->" Expr ;
 (:).             [CaseAlt] ::= CaseAlt ";" [CaseAlt] ;
 
 PVar.           Pattern2 ::= LIdent ;
+PInt.           Pattern2 ::= Number ;
 PAny.           Pattern2 ::= "_" ;
 PListNil.       Pattern2 ::= "[" "]" ;
 PCons.          Pattern1 ::= UIdent [Pattern2];
@@ -87,3 +88,8 @@ entrypoints Expr, Decl, CaseAlt, Pattern ;
   |]
 
 
+
+parseExpr :: String -> Expr
+parseExpr s = case pExpr (myLexer s) of
+  Ok e -> e
+  Bad s -> error s

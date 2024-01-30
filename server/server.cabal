@@ -28,6 +28,8 @@ executable server
     other-modules:
         Parse.Kumar.Parser
         Parse.Kumar.Usage
+        Kumar
+        Semantic
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:

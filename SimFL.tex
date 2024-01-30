@@ -2,7 +2,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{proof}
 \usepackage{stmaryrd}
-\usepackage[letterpaper,margin=1cm]{geometry}
+\usepackage[legalpaper,margin=1cm]{geometry}
 \usepackage[usenames,dvipsnames]{xcolor}
 
 \title{SimFL}
@@ -14,11 +14,12 @@
 \def\rt{\Rightarrow}
 \def\binop{\, \text{\textbullet}\, }
 \def\xj#1#2{\langle #1 \ | \ #2 \rangle}
-\def\envj#1#2#3{D, #1 \vdash #2 \rt #3}
+\def\envj#1#2#3{#1 \vdash #2 \rt #3}
 \def\noenvj#1#2{#1 \rt #2}
 \def\xnf#1#2#3{D,#1 : #2 \rightsquigarrow #3}
 \def\sem#1{\llbracket\, #1 \,\rrbracket}
 \def\closure#1#2#3{(\textsf{\textbf{closure}} \ #1 \to #2,#3)}
+\def\val#1#2#3{(\textsf{\textbf{val}} \ #1 \ {#2} , #3 )}
 
 
 \begin{document}
@@ -59,6 +60,17 @@ d \in \textsc{Decl} ::= \ & \code{$f$ = $e$}\\
 %
 \binop \in \textsc{BinOp} ::= \ & s\overline{s}
 \end{align*}
+
+\begin{align*}
+v\in \textsc{Value}::=\ & {\val{C}{\overline{v}}{\tau}} \\
+\por & \closure x e \rho
+\end{align*}
+
+\begin{gather*}
+\infer[]{\envj \rho n {\val{n}{}{\code{Int}}}}{}\\[12pt]
+\infer[]{\envj{\rho}{\code{let data $T$ = $C$ $\overline{\tau}$ in $e$}}{v}}{\envj{\rho [C\mapsto \val{C}{\varnothing}{\overline{\tau}\to T}]}{e}{v}}\\
+\infer[]{\envj{\rho}{C\, e}{\val{C}{s\, v}{\tau_2}}}{\envj{\rho}{C}{\val{C}{s}{\tau_1\to\tau_2}} & \envj{\rho}{e}{v}}
+\end{gather*}
 
 
 
