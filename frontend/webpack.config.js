@@ -23,7 +23,7 @@ module.exports = {
   // },
   devServer: {
     allowedHosts: 'all',
-    host: '0.0.0.0',
+    host: 'local-ipv4',
     port: 80,
     // client: {
     //   webSocketURL: 'auto://0.0.0.0:8080/ws',
