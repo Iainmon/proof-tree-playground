@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 import Data.Text.Lazy
@@ -40,6 +41,6 @@ main :: IO ()
 main = scotty 3000 $ do
   middleware corsMW
   parseService
-  get "/" $ html $ pack "Api working!"
+  get "/" $ html "Api working!"
 
 
