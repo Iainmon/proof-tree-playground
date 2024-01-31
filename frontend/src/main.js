@@ -180,7 +180,7 @@ function Handler() {
 }
 
 function SourceInput({ handleNewTree }) {
-    const [source, setSource] = useState('(((1,2),3),((4,5),(6,7)))');
+    const [source, setSource] = useState('let x = Just 1 in let y = Nothing in case x of { Just z -> Just y ; Nothing -> 0 }');
     
     async function handleClick() {
         const tree = await getProofTree(source);

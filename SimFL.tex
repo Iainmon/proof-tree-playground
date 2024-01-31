@@ -78,6 +78,7 @@ v\in \textsc{Value}::=\ & C \ \overline{v} \\
 \infer[\tsc{Case}]{\envj \rho {\code{case $e$ of \{$\overline{\langle p_n \texttt{ -> } e_n\rangle}$\}}} {v_2}}{\envj \rho {e} {v} && v\triangleright p_i : \sigma_i && \envj {\rho,\sigma_i}{e_i}{v_i} && i \leq n}\\[12pt]
 \infer[\tsc{BuiltInOp}]{\envj \rho {e_1 \binop e_2} {v_1\llbracket\bullet \rrbracket v_2}}{\envj \rho {e_1} {v_1} && \envj {\rho} {e_2} {v_2} && \textsf{builtin}\, \binop}\qquad
 \infer[\tsc{BuiltInFun}]{\envj \rho {\texttt{($\binop$)}} {v}}{\envj \rho {\code{fun a \texttt{->} (fun b \texttt{->} a $\binop$ b)}} {v} && \textsf{builtin}\, \binop}\\[12pt]
+\infer[\tsc{BuiltInFun}]{\envj \rho {\texttt{($\binop$)}} {v}}{\envj \rho {\code{fun a \texttt{->} (fun b \texttt{->} a $\binop$ b)}} {v} && \textsf{builtin}\, \binop}\\[12pt]
 \end{gather*}
 
 \begin{gather*}

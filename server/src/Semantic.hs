@@ -24,6 +24,13 @@ eval env (ELet (DSimp x e1) e2) = eval ((x, eval env e1) : env) e2
 {- Case -}
 eval env (ECase e alts) | v <- eval env e, Just (envi,ei) <- firstMatch v alts = eval (envi ++ env) ei
 
+{- Desugar -}
+eval env (EList []) = VCon "[]" []
+eval env (EList (e:es)) = eval env (EApp (EApp (ECon ":") e) (EList es))
+
+eval env e = error ("eval: " ++ show env ++ " |- " ++ show e ++ " -> ?")
+
+
 firstMatch :: Value -> [CaseAlt] -> Maybe (Env,Expr)
 firstMatch v [] = Nothing
 firstMatch v ((p,e):as) = case match v p of
@@ -40,12 +47,15 @@ match (VCon n vs) (PCons n' ps) | n == n', length vs == length ps
        if functional env 
         then Just env 
         else Nothing
+match _ _ = Nothing
 
 functional :: Eq a => [(a,b)] -> Bool
 functional f = length dom == length (nub dom)
   where dom = map fst f
 
 
-
+ex0 = parseExpr "1"
 ex1 = parseExpr "let x = 1 in Left x"
 ex2 = parseExpr "let x = Just 1 in let y = Nothing in case x of { Just z -> Just y ; Nothing -> 0 }"
+ex3 = parseExpr "[case [1,2] of { [] -> 0 ; x:xs -> x },[2,3]]"
+ex4 = parseExpr "[1,2]"

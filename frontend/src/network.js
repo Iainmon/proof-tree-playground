@@ -25,7 +25,7 @@ function populateTree({ conclusion, premises }) {
 export async function getProofTree(source, url = 'localhost', port = 3000) {
     const options = {
         method: 'POST',
-        url: `http://localhost:3000/parse`,
+        url: `http://godel.moncrief.dev:3000/parse`,
         headers: {
             'Content-Type': 'application/json',
             // 'Access-Control-Allow-Origin': 'http://localhost:8080',

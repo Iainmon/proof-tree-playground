@@ -100,10 +100,17 @@ data Value
   | VClosure Name Expr Env
   deriving Eq
 
+showListValue :: Value -> String
+showListValue (VCon "[]" []) = ""
+showListValue (VCon ":" [v1,VCon "[]" []]) = show v1
+showListValue (VCon ":" [v1,v2]) = show v1 ++ "," ++ showListValue v2
+showListValue v = show v
+
 instance Show Value where
   show (VCon n []) = n
+  show v@(VCon ":" [v1,v2]) = "[" ++ showListValue v ++ "]"
   show (VCon n vs) = "(" ++ n ++ " " ++ intercalate " " [show v | v <- vs] ++ ")"
-  show (VClosure n e env) = "clo " ++ n ++ " -> " ++ show e
+  show (VClosure n e env) = "(clo " ++ n ++ " -> " ++ show e ++ ")"
 
 type Env = [(Name, Value)]
 

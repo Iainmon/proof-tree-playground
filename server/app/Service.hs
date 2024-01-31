@@ -6,10 +6,12 @@ module Service where
 import Data.Aeson.Types
 
 import Syntax
+import Latex
 import qualified Parser
 import Data.Text.Lazy hiding (map)
 import Logic.Proof
 import Web.Scotty
+import qualified Display
 
 
 
@@ -32,17 +34,6 @@ parseService = post "/parse" $ do
     req <- jsonData :: ActionM ParseRequest
     let e = source req
     liftIO $ print e
-    let tr = pt' (Parser.parse e)
+    let tr = Display.pt' e -- pt' (Parser.parse e)
     liftIO $ print tr
     json $ fmap latex tr
-    -- addHeader "Access-Control-Allow-Origin" "*"
-    -- addHeader "Access-Control-Allow-Headers" "Content-Type"
-    -- addHeader "Access-Control-Allow-Methods" "POST, GET, OPTIONS"
-    -- addHeader "Access-Control-Allow-Credentials" "true"
-
-    -- beam <- captureParam "source"
-    -- let e = Parser.parse beam
-    -- let tr = pt' e
-    -- let jsn = toJson tr
-    -- json $ pack (jsn)
-

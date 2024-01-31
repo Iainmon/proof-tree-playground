@@ -2,6 +2,7 @@ module Syntax where
 
 import Logic.Proof
 import Data.List (intercalate)
+import Latex
 
 data Expr
   = Lit Int
@@ -38,8 +39,6 @@ instance Explain TJ where
   premises _                 = []
 
 
-class Latex a where
-  latex :: a -> String
 
 instance Latex Expr where
   latex (Lit n) = show n
