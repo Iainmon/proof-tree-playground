@@ -21,6 +21,10 @@ module.exports = {
   //     }
   //  }
   // },
+  devServer: {
+    allowedHosts: ['godel.moncrief.dev','all'],
+    port: 8080,
+  },
     mode: "development",
     entry: path.join(__dirname, "src", "main.js"),
     output: {
