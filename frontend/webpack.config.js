@@ -22,9 +22,12 @@ module.exports = {
   //  }
   // },
   devServer: {
-    allowedHosts: ['godel.moncrief.dev','all'],
-    host: '0.0.0.0',
-    port: 8081,
+    // allowedHosts: 'all',
+    // host: '0.0.0.0',
+    // port: 8080,
+    client: {
+      webSocketURL: 'auto://0.0.0.0:8080/ws',
+    }
   },
     mode: "development",
     entry: path.join(__dirname, "src", "main.js"),
