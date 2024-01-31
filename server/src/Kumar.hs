@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternSynonyms #-}
 module Kumar where
 
 import qualified Parse.Kumar.Parser as K
@@ -51,18 +52,20 @@ type BinOp = String
 data Expr
   = EVar Name
   | EInt Int
-  | EChar Char
   | ECon Name
   | EList [Expr]
   | EBinFn BinOp
   | EFun Name Expr
-  | ELet [Decl] Expr
+  | ELet Decl Expr
+  | ERec [Decl] Expr
   | ECase Expr [CaseAlt]
   | EIf Expr Expr Expr
   | EApp Expr Expr
   | EBinOp Expr BinOp Expr
   deriving (Show, Eq)
 
+-- pattern ELetIn :: Name -> Expr -> Expr -> Expr
+-- pattern ELetIn x e1 e2 = ELet (DSimp x e1) e2
 
 data TypeName 
   = TNLit Name 
@@ -93,12 +96,13 @@ data Pattern
   deriving (Show, Eq)
 
 data Value
-  = VCon Name [Value] [TypeName]
+  = VCon Name [Value]
   | VClosure Name Expr Env
   deriving Eq
 
 instance Show Value where
-  show (VCon n vs t) = "(" ++ n ++ " " ++ concat [show v ++ " " | v <- vs] ++ ":: " ++ intercalate " -> " (map show t) ++ ")"
+  show (VCon n []) = n
+  show (VCon n vs) = "(" ++ n ++ " " ++ intercalate " " [show v | v <- vs] ++ ")"
   show (VClosure n e env) = "clo " ++ n ++ " -> " ++ show e
 
 type Env = [(Name, Value)]
@@ -122,11 +126,12 @@ transExpr :: K.Expr -> Expr
 transExpr (K.EVar x) = EVar (transLIdent x)
 transExpr (K.EInt n) = EInt (transNumber n)
 transExpr (K.ECon x) = ECon (transUIdent x)
-transExpr (K.EStr x) = EList (map EChar x)
+transExpr (K.EStr x) = EApp (ECon "String") (ECon x)
 transExpr (K.EList xs) = EList (map transExpr xs)
 transExpr (K.EBinFn bo) = EBinFn (transBinOp bo)
 transExpr (K.EFun x e) = EFun (transLIdent x) (transExpr e)
-transExpr (K.ELet d e) = ELet (map transDecl d) (transExpr e)
+transExpr (K.ELet [d@(K.DSimp x e1)] e2) = ELet (transDecl d) (transExpr e2)
+transExpr (K.ELet d e) = ERec (map transDecl d) (transExpr e)
 transExpr (K.ECase e as) = ECase (transExpr e) (map transCaseAlt as)
 transExpr (K.EIf e1 e2 e3) = EIf (transExpr e1) (transExpr e2) (transExpr e3)
 transExpr (K.EApp e1 e2) = EApp (transExpr e1) (transExpr e2)

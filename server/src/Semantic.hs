@@ -2,22 +2,50 @@ module Semantic where
 
 import Kumar
 import Data.Maybe (fromJust)
+import Control.Monad (zipWithM)
+import Data.List (nub)
+
 
 eval :: Env -> Expr -> Value
-eval env (EVar n) = fromJust (lookup n env)
-eval env (EInt n) = VCon (show n) [] [TNLit "Int"]
-eval env (EChar c) = VCon (show c) [] [TNLit "Char"]
-eval env (ECon n) = fromJust (lookup n env)
-eval env (ELet (d:_) e) = eval (evalDecl env d ++ env) e
-eval env (EApp e1 e2) | VCon n vs (_:ts) <- eval env e1 = VCon n (vs ++ [eval env e2]) ts
+{- Num -}
+eval env (EInt n) = VCon (show n) []
+{- Con -}
+eval env (ECon n) = VCon n []
+{- Var -}
+eval env (EVar x) = fromJust (lookup x env)
+{- Fun -}
+eval env (EFun x e) = VClosure x e env
+{- App -}
+eval env (EApp e1 e2) | VClosure x e3 env' <- eval env e1 = eval ((x, eval env e2) : env') e3
+{- AppCon -}
+eval env (EApp e1 e2) | VCon n vs <- eval env e1 = VCon n (vs ++ [eval env e2])
+{- Let -}
+eval env (ELet (DSimp x e1) e2) = eval ((x, eval env e1) : env) e2
+{- Case -}
+eval env (ECase e alts) | v <- eval env e, Just (envi,ei) <- firstMatch v alts = eval (envi ++ env) ei
 
-  -- VClosure x e' env' -> eval ((x, eval env e2) : env') e'
-  -- _ -> error "not a closure"
-eval env e = error $ show env ++ " " ++ show e
+firstMatch :: Value -> [CaseAlt] -> Maybe (Env,Expr)
+firstMatch v [] = Nothing
+firstMatch v ((p,e):as) = case match v p of
+  Just env -> Just (env,e)
+  Nothing  -> firstMatch v as
 
-evalDecl :: Env -> Decl -> Env
-evalDecl env (DSimp n e) = [(n, eval env e)]
-evalDecl env (DRec f x e') = [(f, VClosure x (ELet [DRec f x e'] e') env)]
-evalDecl env (DType t cs) = [(n, VCon n [] (ns ++ [TNLit t])) | (n,ns) <- cs]
 
-ex = parseExpr "let data Maybe = Just Int | Nothing in Just 1"
+match :: Value -> Pattern -> Maybe Env
+match v PAny     = Just []
+match v (PVar x) = Just [(x,v)]
+match (VCon n vs) (PCons n' ps) | n == n', length vs == length ps 
+  = do envs <- zipWithM match vs ps
+       let env = concat envs
+       if functional env 
+        then Just env 
+        else Nothing
+
+functional :: Eq a => [(a,b)] -> Bool
+functional f = length dom == length (nub dom)
+  where dom = map fst f
+
+
+
+ex1 = parseExpr "let x = 1 in Left x"
+ex2 = parseExpr "let x = Just 1 in let y = Nothing in case x of { Just z -> Just y ; Nothing -> 0 }"

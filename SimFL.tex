@@ -20,7 +20,8 @@
 \def\sem#1{\llbracket\, #1 \,\rrbracket}
 \def\closure#1#2#3{(\textsf{\textbf{closure}} \ #1 \to #2,#3)}
 \def\val#1#2#3{(\textsf{\textbf{val}} \ #1 \ {#2} , #3 )}
-
+\def\tsc#1{\textsc{#1}}
+\def\matchj#1#2#3{#1 \triangleright #2 : #3}
 
 \begin{document}
 
@@ -39,15 +40,14 @@ datadef\in \textsc{DataDef} ::= \ & \code{data $T$ $\overline{\alpha}$ = $\delta
 e \in \textsc{Expr} ::= \ & x \\
 \por & n \\
 \por & C \\
-\por & \code{`$\,c\,$`}\\
-\por & \code{" $\overline{c}$ "}\\
 \por & \code{[ ]}\\
 \por & \code{[}\,e\,\overline{\langle \code{,}\ e\rangle}\,\code{]}\\
 \por & e \binop e\\
 \por & \texttt{($\binop$)}\\
 \por & \code{fun $x$ \texttt{->} $e$}\\
 \por & e \ e\\
-\por & \code{let $d$ } \overline{\langle \code{and} \ d\rangle}\code{ in }\\
+\por & \code{let $x$ = $e$ in $e$}\\
+\por & \code{let rec $f$ $x$ = $e$ }\overline{\langle\code{and rec $f$ $x$ = $e$}\rangle}\code{ in $e$}\\
 \por & \code{case $e$ of }\texttt{\char`\{} \ \code{$p$ \texttt{->} $e$}\ \overline{\langle \texttt{;} \, \code{$p$ \texttt{->} $e$}\rangle} \ \texttt{\char`\}}\\
 \por & \code{if $e$ then $e$ else $e$}\\
 %
@@ -62,15 +62,30 @@ d \in \textsc{Decl} ::= \ & \code{$f$ = $e$}\\
 \end{align*}
 
 \begin{align*}
-v\in \textsc{Value}::=\ & {\val{C}{\overline{v}}{\tau}} \\
+v\in \textsc{Value}::=\ & C \ \overline{v} \\
 \por & \closure x e \rho
 \end{align*}
+\pagebreak
 
 \begin{gather*}
-\infer[]{\envj \rho n {\val{n}{}{\code{Int}}}}{}\\[12pt]
-\infer[]{\envj{\rho}{\code{let data $T$ = $C$ $\overline{\tau}$ in $e$}}{v}}{\envj{\rho [C\mapsto \val{C}{\varnothing}{\overline{\tau}\to T}]}{e}{v}}\\
-\infer[]{\envj{\rho}{C\, e}{\val{C}{s\, v}{\tau_2}}}{\envj{\rho}{C}{\val{C}{s}{\tau_1\to\tau_2}} & \envj{\rho}{e}{v}}
+\infer[\tsc{Num}]{\envj \rho n n}{}\qquad
+\infer[\tsc{Con}]{\envj \rho C C}{}\qquad
+\infer[\tsc{Var}]{\envj \rho x v}{(x,v)\in \rho}\\[12pt]
+\infer[\tsc{Fun}]{\envj \rho {\code{fun $x$ \texttt{->} $e$}} {\closure x e \rho}}{}\\[12pt]
+\infer[\tsc{App}]{\envj \rho {e_1 \ e_2} v_3}{\envj{\rho}{e_1}{\closure x {e_3} {\sigma}} && \envj \rho {e_2} {v_2} && \envj{\sigma [x\mapsto v_2]}{e_3}{v_3}}\\[12pt]
+\infer[\tsc{AppCons}]{\envj{\rho}{e_1\, e_2}{C\ \hat{v},v}}{\envj{\rho}{e_1}{C\ \hat{v}} && \envj{\rho}{e_2}{v}}\\[12pt]
+\infer[\tsc{Let}]{\envj \rho {\code{let $x$ = $e_1$ in $e_2$}} {v_2}}{\envj \rho {e_1} {v_1} && \envj {\rho[x\mapsto v_1]} {e_2} {v_2}}\\[12pt]
+\infer[\tsc{Case}]{\envj \rho {\code{case $e$ of \{$\overline{\langle p_n \texttt{ -> } e_n\rangle}$\}}} {v_2}}{\envj \rho {e} {v} && v\triangleright p_i : \sigma_i && \envj {\rho,\sigma_i}{e_i}{v_i} && i \leq n}\\[12pt]
+\infer[\tsc{BuiltInOp}]{\envj \rho {e_1 \binop e_2} {v_1\llbracket\bullet \rrbracket v_2}}{\envj \rho {e_1} {v_1} && \envj {\rho} {e_2} {v_2} && \textsf{builtin}\, \binop}\qquad
+\infer[\tsc{BuiltInFun}]{\envj \rho {\texttt{($\binop$)}} {v}}{\envj \rho {\code{fun a \texttt{->} (fun b \texttt{->} a $\binop$ b)}} {v} && \textsf{builtin}\, \binop}\\[12pt]
 \end{gather*}
+
+\begin{gather*}
+\infer[\tsc{MatchAny}]{\matchj v {\texttt{\_}\,} \varnothing}{}\qquad
+\infer[\tsc{MatchVar}]{\matchj v x {\{x\mapsto v\}}}{}\\[12pt]
+\infer[\tsc{MatchCons}]{\matchj {C\ \hat{v}} {C\ \hat{p}} \sigma}{\forall i \leq n,\ \, \matchj{v_i}{p_i}{\sigma_i} && \bigcap_{j=1}^n \textsf{free}(\sigma_j)=\varnothing && \sigma = \bigcup_{j=1}^n \sigma_j}	
+\end{gather*}
+
 
 
 
