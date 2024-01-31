@@ -22,12 +22,15 @@ module.exports = {
   //  }
   // },
   devServer: {
-    allowedHosts: 'all',
-    host: 'local-ipv4',
-    port: 80,
+    // allowedHosts: 'all',
+    // host: 'local-ipv4',
+    port: 9000,
     // client: {
     //   webSocketURL: 'auto://0.0.0.0:8080/ws',
     // }
+    client: {
+      logging: 'verbose',
+    },
   },
     mode: "development",
     entry: path.join(__dirname, "src", "main.js"),
