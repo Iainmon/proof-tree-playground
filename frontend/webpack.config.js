@@ -23,6 +23,7 @@ module.exports = {
   // },
   devServer: {
     allowedHosts: ['godel.moncrief.dev','all'],
+    host: '0.0.0.0',
     port: 8081,
   },
     mode: "development",
