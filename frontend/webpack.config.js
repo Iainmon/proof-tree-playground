@@ -22,7 +22,7 @@ module.exports = {
   //  }
   // },
   devServer: {
-    // allowedHosts: 'all',
+    allowedHosts: 'all',
     // host: 'local-ipv4',
     port: 9000,
     // client: {
