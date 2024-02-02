@@ -6,6 +6,7 @@ npx kill-port 3000;
 npx kill-port 9000;
 
 cd frontend;
+yarn;
 yarn run start-server;
 
 cd ..

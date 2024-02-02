@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { useState, useReducer, useRef } from 'react';
+import useLocalStorage from 'use-local-storage';
 import { createRoot } from 'react-dom/client';
 
 import Button from 'react-bootstrap/Button';
@@ -13,6 +14,8 @@ import { Node } from './PTNode.js';
 
 
 import { getProofTree } from './network.js';
+
+import { CodeBox } from './CodeBox.js';
 
 import './App.scss';
 
@@ -173,32 +176,31 @@ function Handler() {
             }}>
                 <Node tree={tree} />
             </div>
-            <hr />
-            <SourceInput handleNewTree={handleNewTree} />
+            <div className="fixed-bottom">
+                <SourceInput handleNewTree={handleNewTree} />
+            </div>
         </>
     );
 }
 
 function SourceInput({ handleNewTree }) {
-    const [source, setSource] = useState('let x = Just 1 in let y = Nothing in case x of { Just z -> Just y ; Nothing -> 0 }');
+    const [source, setSource] = useLocalStorage('expression','let x = Just 1 in let y = Nothing in case x of { Just z -> Just y ; Nothing -> 0 }');
     
     async function handleClick() {
         const tree = await getProofTree(source);
         handleNewTree(tree);
     }
 
-    function onChange(event) {
-        setSource(event.target.value);
+    function onChange(text) {
+        setSource(text);
+        // setSource(event.target.value);
     }
 
 
     return (
         <>
-            <label>
-                Expression: 
-                <Form.Control type="text" value={source} onChange={onChange} />
-                <Button variant="info" onClick={handleClick}>Submit</Button>
-            </label>
+            <CodeBox value={source} onChange={onChange} />
+            <Button variant="info" onClick={handleClick}>Submit</Button>
         </>
     );
 }
