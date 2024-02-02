@@ -8,5 +8,6 @@ npx kill-port 9000;
 cd frontend;
 yarn run start-server;
 
-cd ../server;
-nohup cabal exec server &;
+cd ..
+cd server
+nohup cabal exec server &
