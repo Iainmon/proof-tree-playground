@@ -10,4 +10,4 @@ yarn run start-server;
 
 cd ..
 cd server
-nohup cabal exec server &
+nohup cabal run server &

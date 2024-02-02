@@ -1,4 +1,6 @@
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE ViewPatterns #-}
+
 module Kumar where
 
 import qualified Parse.Kumar.Parser as K
@@ -63,6 +65,17 @@ data Expr
   | EApp Expr Expr
   | EBinOp Expr BinOp Expr
   deriving (Show, Eq)
+
+
+pattern EBuiltInOp :: BinOp
+pattern EBuiltInOp <- (builtIn -> True)
+
+builtIn :: BinOp -> Bool
+builtIn "+" = True
+builtIn "-" = True
+builtIn "*" = True
+builtIn "/" = True
+builtIn _ = False
 
 -- pattern ELetIn :: Name -> Expr -> Expr -> Expr
 -- pattern ELetIn x e1 e2 = ELet (DSimp x e1) e2

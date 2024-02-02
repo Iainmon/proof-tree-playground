@@ -25,8 +25,14 @@ ex = parseExpr "fun x -> 1"
 ex' = infer [] ex
 
 instance Explain EvalJ where
+
+  {- Int -}
   premises (EvalJ r (EInt n) v) = [[]]
+
+  {- Con -}
   premises (EvalJ r (ECon n) v) = [[]]
+
+  {- Var -}
   premises (EvalJ r (EVar x) v) = [[]]
 
   {- Fun -}
@@ -54,6 +60,13 @@ instance Explain EvalJ where
     | v <- eval r e
     , Just (r',e') <- firstMatch v alts
       = [[EvalJ r e v, EvalJ (r'++r) e' v]]
+
+  {- BuiltInOp -}
+  premises (EvalJ r (EBinOp e1 EBuiltInOp e2) v)
+    | v1 <- eval r e1
+    , v2 <- eval r e2
+      = [[EvalJ r e1 v1, EvalJ r e2 v2]]
+
 
   {- Desugar -}
 
