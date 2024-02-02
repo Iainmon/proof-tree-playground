@@ -2,11 +2,14 @@
 \usepackage{amsmath,amssymb}
 \usepackage{proof}
 \usepackage{stmaryrd}
-\usepackage[legalpaper,margin=1cm]{geometry}
+\usepackage[a4paper, total={6in, 8in}]{geometry}
+
+%\usepackage[a4paper,margin=1cm]{geometry}
 \usepackage[usenames,dvipsnames]{xcolor}
 
 \title{SimFL}
-
+%\author{Iain Moncrief and Christine Lin}
+\date{February 2, 2024}
 
 \def\code#1{\textsf{#1}}
 \def\codesf#1{\textsf{#1}}
@@ -29,12 +32,13 @@
 \section*{Syntax}
 
 \begin{gather*}
-\alpha \in \textsc{TypeVar}\qquad T \in \textsc{TypeCon}\qquad C \in \textsc{DataCon}
+ T \in \textsc{TypeCon}\qquad C \in \textsc{DataCon}
 \end{gather*}
-\begin{align*}
-datadef\in \textsc{DataDef} ::= \ & \code{data $T$ $\overline{\alpha}$ = $\delta$ }\overline{\langle\texttt{|}\ \delta\rangle}\\
-\delta \in \textsc{ConDef} ::= \ & \code{$C$ $\overline{\tau}$}
-\end{align*}
+%\begin{align*}
+%\alpha \in \textsc{TypeVar}
+%datadef\in \textsc{DataDef} ::= \ & \code{data $T$ $\overline{\alpha}$ = $\delta$ }\overline{\langle\texttt{|}\ \delta\rangle}\\
+%\delta \in \textsc{ConDef} ::= \ & \code{$C$ $\overline{\tau}$}
+%\end{align*}
 
 \begin{align*}
 e \in \textsc{Expr} ::= \ & x \\
@@ -51,21 +55,22 @@ e \in \textsc{Expr} ::= \ & x \\
 \por & \code{case $e$ of }\texttt{\char`\{} \ \code{$p$ \texttt{->} $e$}\ \overline{\langle \texttt{;} \, \code{$p$ \texttt{->} $e$}\rangle} \ \texttt{\char`\}}\\
 \por & \code{if $e$ then $e$ else $e$}\\
 %
-d \in \textsc{Decl} ::= \ & \code{$f$ = $e$}\\
-\por & \code{rec $f$ $x$ = $e$}\\
-\por & \code{data $T$ = }\code{$C$ $\overline{\tau}$ }\overline{\langle\texttt{|} \ C\ \overline{\tau}\rangle}\\
-\por & {\color{Bittersweet}\code{rec $f$ $x:\tau$ = $e$}}\\
-\por & {\color{Bittersweet}\code{rec $f$ $x$ $\overline{x}$ = $e$}}\\
-\por & {\color{Bittersweet}\code{data $T$ $\overline{\alpha}$ = $\delta$ }\overline{\langle\texttt{|}\ \delta\rangle}}\\
+%d \in \textsc{Decl} ::= \ & \code{$f$ = $e$}\\
+%\por & \code{rec $f$ $x$ = $e$}\\
+%\por & \code{data $T$ = }\code{$C$ $\overline{\tau}$ }\overline{\langle\texttt{|} \ C\ \overline{\tau}\rangle}\\
+%\por & {\color{Bittersweet}\code{rec $f$ $x:\tau$ = $e$}}\\
+%\por & {\color{Bittersweet}\code{rec $f$ $x$ $\overline{x}$ = $e$}}\\
+%\por & {\color{Bittersweet}\code{data $T$ $\overline{\alpha}$ = $\delta$ }\overline{\langle\texttt{|}\ \delta\rangle}}\\
 %
-\binop \in \textsc{BinOp} ::= \ & s\overline{s}
 \end{align*}
-
 \begin{align*}
+\binop \in \textsc{BinOp} ::= \ & s\overline{s}\\
 v\in \textsc{Value}::=\ & C \ \overline{v} \\
 \por & \closure x e \rho
 \end{align*}
 \pagebreak
+
+\section*{Natural Semantics}
 
 \begin{gather*}
 \infer[\tsc{Num}]{\envj \rho n n}{}\qquad
@@ -75,16 +80,16 @@ v\in \textsc{Value}::=\ & C \ \overline{v} \\
 \infer[\tsc{App}]{\envj \rho {e_1 \ e_2} v_3}{\envj{\rho}{e_1}{\closure x {e_3} {\sigma}} && \envj \rho {e_2} {v_2} && \envj{\sigma [x\mapsto v_2]}{e_3}{v_3}}\\[12pt]
 \infer[\tsc{AppCons}]{\envj{\rho}{e_1\, e_2}{C\ \hat{v},v}}{\envj{\rho}{e_1}{C\ \hat{v}} && \envj{\rho}{e_2}{v}}\\[12pt]
 \infer[\tsc{Let}]{\envj \rho {\code{let $x$ = $e_1$ in $e_2$}} {v_2}}{\envj \rho {e_1} {v_1} && \envj {\rho[x\mapsto v_1]} {e_2} {v_2}}\\[12pt]
+\infer[\tsc{LetRec}]{\envj \rho {\code{let rec $f$ $x$ = $e_1$ in $e_2$}} {v}}{\envj{\rho[f \mapsto \closure x {\code{let rec $f$ $x$ = $e_1$ in $e_2$}}{\rho}]}{e_2}{v}}\\[12pt]
 \infer[\tsc{Case}]{\envj \rho {\code{case $e$ of \{$\overline{\langle p_n \texttt{ -> } e_n\rangle}$\}}} {v_2}}{\envj \rho {e} {v} && v\triangleright p_i : \sigma_i && \envj {\rho,\sigma_i}{e_i}{v_i} && i \leq n}\\[12pt]
-\infer[\tsc{BuiltInOp}]{\envj \rho {e_1 \binop e_2} {v_1\llbracket\bullet \rrbracket v_2}}{\envj \rho {e_1} {v_1} && \envj {\rho} {e_2} {v_2} && \textsf{builtin}\, \binop}\qquad
-\infer[\tsc{BuiltInFun}]{\envj \rho {\texttt{($\binop$)}} {v}}{\envj \rho {\code{fun a \texttt{->} (fun b \texttt{->} a $\binop$ b)}} {v} && \textsf{builtin}\, \binop}\\[12pt]
+\infer[\tsc{BuiltInOp}]{\envj \rho {e_1 \binop e_2} {v_1\llbracket\bullet \rrbracket v_2}}{\envj \rho {e_1} {v_1} && \envj {\rho} {e_2} {v_2} && \textsf{builtin}\, \binop}\\[12pt]
 \infer[\tsc{BuiltInFun}]{\envj \rho {\texttt{($\binop$)}} {v}}{\envj \rho {\code{fun a \texttt{->} (fun b \texttt{->} a $\binop$ b)}} {v} && \textsf{builtin}\, \binop}\\[12pt]
 \end{gather*}
 
 \begin{gather*}
 \infer[\tsc{MatchAny}]{\matchj v {\texttt{\_}\,} \varnothing}{}\qquad
 \infer[\tsc{MatchVar}]{\matchj v x {\{x\mapsto v\}}}{}\\[12pt]
-\infer[\tsc{MatchCons}]{\matchj {C\ \hat{v}} {C\ \hat{p}} \sigma}{\forall i \leq n,\ \, \matchj{v_i}{p_i}{\sigma_i} && \bigcap_{j=1}^n \textsf{free}(\sigma_j)=\varnothing && \sigma = \bigcup_{j=1}^n \sigma_j}	
+\infer[\tsc{MatchCons}]{\matchj {C\ \hat{v}} {C\ \hat{p}} \sigma}{\forall i \leq n,\ \, \matchj{v_i}{p_i}{\sigma_i} && \bigcap_{j=1}^n \textsf{free}(p_j)=\varnothing && \sigma = \bigcup_{j=1}^n \sigma_j}	
 \end{gather*}
 
 
