@@ -55,6 +55,10 @@ instance Explain EvalJ where
     | v1 <- eval r e1
       = [[EvalJ r e1 v1, EvalJ ((x,v1):r) e2 v]]
 
+  {- LetRec -}
+  premises (EvalJ r (ERec [DRec f x e1] e2) v)
+    = [[EvalJ ((f,VClosure x (ERec [DRec f x e1] e1) r):r) e2 v]]
+
   {- Case -}
   premises (EvalJ r (ECase e alts) v)
     | v <- eval r e
@@ -62,7 +66,7 @@ instance Explain EvalJ where
       = [[EvalJ r e v, EvalJ (r'++r) e' v]]
 
   {- BuiltInOp -}
-  premises (EvalJ r (EBinOp e1 EBuiltInOp e2) v)
+  premises (EvalJ r (EBinOp e1 BuiltInOp e2) v)
     | v1 <- eval r e1
     , v2 <- eval r e2
       = [[EvalJ r e1 v1, EvalJ r e2 v2]]

@@ -1,0 +1,13 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "dev script config for haskell project",
+  "main": "none",
+  "license": "UNLICENSED",
+  "scripts": {
+    "watch-cabal": "nodemon --ext \"hs\" --watch app --watch src --exec \"cabal run server\""
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  }
+}

@@ -16,9 +16,14 @@ instance Latex Expr where
   latex (EList es) = "[" ++ intercalate "," (map latex es) ++ "]"
   latex (EFun x e) = "fun " ++ x ++ " -> " ++ latex e
   latex (ELet (DSimp x e1) e2) = "let " ++ x ++ " = " ++ latex e1 ++ " in " ++ latex e2
+  latex (ERec ds e2) = "let " ++ intercalate " and " (map latex ds) ++ " in " ++ latex e2
   latex (ECase e alts) = "case " ++ latex e ++ " of \\{ " ++ intercalate " ; " (map (\(p,e) -> latex p ++ " -> " ++ latex e) alts) ++ " \\}"
   latex (EApp e1 e2) = latex e1 ++ " " ++ latex e2
+  latex (EBinOp e1 op e2) = "(" ++ latex e1 ++ " " ++ op ++ " " ++ latex e2 ++ ")"
 
+instance Latex Decl where
+  latex (DSimp x e) = x ++ " = " ++ latex e
+  latex (DRec f x e) = "rec " ++ f ++ " " ++ x ++ " = " ++ latex e
 
 instance Latex Pattern where
   latex PAny = "_"
@@ -34,7 +39,7 @@ instance Latex Value where
   latex (VCon "[]" []) = "[]"
   latex (VCon ":" [v1,v2]) = latex v1 ++ ":" ++ latex v2
   latex (VCon n vs) = n ++ " " ++ intercalate " " (map latex vs)
-  latex (VClosure x e rho) = "closure " ++ x ++ " -> " ++ latex e ++ " " ++ latexEnv rho
+  latex (VClosure x e rho) = "$($" ++ "\\textsf{\\textbf{closure}} " ++ x ++ "$\\to$" ++ latex e ++ "$)$"-- ++ " " ++ latexEnv rho
 
 
 instance Latex EvalJ where

@@ -6,6 +6,7 @@ module Kumar where
 import qualified Parse.Kumar.Parser as K
 import Logic.Proof
 import Data.List (intercalate)
+import Text.Read (readMaybe)
 
 {-
 data K.Expr
@@ -67,8 +68,15 @@ data Expr
   deriving (Show, Eq)
 
 
-pattern EBuiltInOp :: BinOp
-pattern EBuiltInOp <- (builtIn -> True)
+pattern BuiltInOp :: BinOp
+pattern BuiltInOp <- (builtIn -> True)
+
+pattern BOAdd,BOSub,BOMul,BODiv :: BinOp
+pattern BOAdd = "+"
+pattern BOSub = "-"
+pattern BOMul = "*"
+pattern BODiv = "/"
+
 
 builtIn :: BinOp -> Bool
 builtIn "+" = True
@@ -108,10 +116,23 @@ data Pattern
   | PCons Name [Pattern]
   deriving (Show, Eq)
 
+type Env = [(Name, Value)]
+
 data Value
   = VCon Name [Value]
   | VClosure Name Expr Env
   deriving Eq
+
+conValue :: Value -> Maybe Name
+conValue (VCon n []) = Just n
+conValue _ = Nothing
+
+numValue :: Value -> Maybe Int
+numValue v = do n <- conValue v 
+                readMaybe n :: Maybe Int
+
+boolValue :: Value -> Maybe Bool
+boolValue v = conValue v >>= readMaybe
 
 showListValue :: Value -> String
 showListValue (VCon "[]" []) = ""
@@ -125,7 +146,6 @@ instance Show Value where
   show (VCon n vs) = "(" ++ n ++ " " ++ intercalate " " [show v | v <- vs] ++ ")"
   show (VClosure n e env) = "(clo " ++ n ++ " -> " ++ show e ++ ")"
 
-type Env = [(Name, Value)]
 
 parseExpr :: String -> Expr
 parseExpr s = transExpr (K.parseExpr s)

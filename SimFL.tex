@@ -80,7 +80,7 @@ v\in \textsc{Value}::=\ & C \ \overline{v} \\
 \infer[\tsc{App}]{\envj \rho {e_1 \ e_2} v_3}{\envj{\rho}{e_1}{\closure x {e_3} {\sigma}} && \envj \rho {e_2} {v_2} && \envj{\sigma [x\mapsto v_2]}{e_3}{v_3}}\\[12pt]
 \infer[\tsc{AppCons}]{\envj{\rho}{e_1\, e_2}{C\ \hat{v},v}}{\envj{\rho}{e_1}{C\ \hat{v}} && \envj{\rho}{e_2}{v}}\\[12pt]
 \infer[\tsc{Let}]{\envj \rho {\code{let $x$ = $e_1$ in $e_2$}} {v_2}}{\envj \rho {e_1} {v_1} && \envj {\rho[x\mapsto v_1]} {e_2} {v_2}}\\[12pt]
-\infer[\tsc{LetRec}]{\envj \rho {\code{let rec $f$ $x$ = $e_1$ in $e_2$}} {v}}{\envj{\rho[f \mapsto \closure x {\code{let rec $f$ $x$ = $e_1$ in $e_2$}}{\rho}]}{e_2}{v}}\\[12pt]
+\infer[\tsc{LetRec}]{\envj \rho {\code{let rec $f$ $x$ = $e_1$ in $e_2$}} {v}}{\envj{\rho[f \mapsto \closure x {\code{let rec $f$ $x$ = $e_1$ in $e_1$}}{\rho}]}{e_2}{v}}\\[12pt]
 \infer[\tsc{Case}]{\envj \rho {\code{case $e$ of \{$\overline{\langle p_n \texttt{ -> } e_n\rangle}$\}}} {v_2}}{\envj \rho {e} {v} && v\triangleright p_i : \sigma_i && \envj {\rho,\sigma_i}{e_i}{v_i} && i \leq n}\\[12pt]
 \infer[\tsc{BuiltInOp}]{\envj \rho {e_1 \binop e_2} {v_1\llbracket\bullet \rrbracket v_2}}{\envj \rho {e_1} {v_1} && \envj {\rho} {e_2} {v_2} && \textsf{builtin}\, \binop}\\[12pt]
 \infer[\tsc{BuiltInFun}]{\envj \rho {\texttt{($\binop$)}} {v}}{\envj \rho {\code{fun a \texttt{->} (fun b \texttt{->} a $\binop$ b)}} {v} && \textsf{builtin}\, \binop}\\[12pt]
@@ -90,6 +90,10 @@ v\in \textsc{Value}::=\ & C \ \overline{v} \\
 \infer[\tsc{MatchAny}]{\matchj v {\texttt{\_}\,} \varnothing}{}\qquad
 \infer[\tsc{MatchVar}]{\matchj v x {\{x\mapsto v\}}}{}\\[12pt]
 \infer[\tsc{MatchCons}]{\matchj {C\ \hat{v}} {C\ \hat{p}} \sigma}{\forall i \leq n,\ \, \matchj{v_i}{p_i}{\sigma_i} && \bigcap_{j=1}^n \textsf{free}(p_j)=\varnothing && \sigma = \bigcup_{j=1}^n \sigma_j}	
+\end{gather*}
+
+\begin{gather*}
+\texttt{\textsf{\textbf{closure}} x -> e}	
 \end{gather*}
 
 
