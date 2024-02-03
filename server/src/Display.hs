@@ -26,7 +26,7 @@ instance Latex Decl where
   latex (DRec f x e) = "rec " ++ f ++ " " ++ x ++ " = " ++ latex e
 
 instance Latex Pattern where
-  latex PAny = "_"
+  latex PAny = "\\_"
   latex (PVar x) = x
   latex (PCons n ps) = n ++ " " ++ intercalate " " (map latex ps)
 

@@ -11,4 +11,6 @@ yarn run start-server;
 
 cd ..
 cd server
-nohup cabal run server &
+yarn;
+nohup yarn run run-server &
+# nohup cabal run server &
