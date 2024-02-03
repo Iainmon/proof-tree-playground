@@ -2,7 +2,7 @@
 
 module Main where
 import Data.Text.Lazy
-import Service
+import Server.Service
 
 import qualified Alan.Lang
 
@@ -42,5 +42,8 @@ main = scotty 3000 $ do
   middleware corsMW
   parseService
   get "/" $ html "Api working!"
-
+  -- defaultHandler $ \e -> do
+  --   status 500
+  --   json $ object ["error" .= pack (show e)]
+  
 

@@ -99,3 +99,8 @@ parseExpr :: String -> Expr
 parseExpr s = case pExpr (myLexer (clean s)) of
   Ok e -> e
   Bad s -> error s
+
+parseExprSafe :: String -> Either String Expr
+parseExprSafe s = case pExpr (myLexer (clean s)) of
+  Ok e -> Right e
+  Bad err -> Left err

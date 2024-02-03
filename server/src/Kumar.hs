@@ -150,6 +150,11 @@ instance Show Value where
 parseExpr :: String -> Expr
 parseExpr s = transExpr (K.parseExpr s)
 
+parseExprSafe :: String -> Either String Expr
+parseExprSafe s = case K.parseExprSafe s of
+  Left e -> Left e
+  Right e -> Right $ transExpr e
+
 transLIdent :: K.LIdent -> Name
 transLIdent (K.LIdent (_,x)) = x
 
