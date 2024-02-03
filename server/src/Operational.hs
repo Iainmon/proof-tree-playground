@@ -40,9 +40,9 @@ instance Explain EvalJ where
 
   {- App -}
   premises (EvalJ r (EApp e1 e2) v)
-    | (VClosure x e3 r) <- eval r e1
+    | (VClosure x e3 r') <- eval r e1
     , v2 <- eval r e2
-      = [[EvalJ r e1 (VClosure x e3 r), EvalJ r e2 v2, EvalJ ((x,v2):r) e3 v]]
+      = [[EvalJ r e1 (VClosure x e3 r), EvalJ r e2 v2, EvalJ ((x,v2):r') e3 v]]
   
   {- AppCon -}
   premises (EvalJ r (EApp e1 e2) v)

@@ -12,6 +12,7 @@ import Data.Text.Lazy hiding (map)
 import Logic.Proof
 import Web.Scotty
 import qualified Display
+import qualified Kumar as K
 
 
 
@@ -34,6 +35,8 @@ parseService = post "/parse" $ do
     req <- jsonData :: ActionM ParseRequest
     let e = source req
     liftIO $ print e
+    let e' = K.parseExpr e
+    liftIO $ print e'
     let tr = Display.pt' e -- pt' (Parser.parse e)
     liftIO $ print tr
     json $ fmap latex tr

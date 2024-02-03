@@ -81,3 +81,4 @@ ex2 = parseExpr "let x = Just 1 in let y = Nothing in case x of { Just z -> Just
 ex3 = parseExpr "[case [1,2] of { [] -> 0 ; x:xs -> x },[2,3]]"
 ex4 = parseExpr "[1,2]"
 ex6 = parseExpr "let rec f x = x * x in f 2"
+ex7 = parseExpr "let rec f x = x * x in \n  let y = 2 in f y"

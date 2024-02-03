@@ -21,6 +21,7 @@ module Parse.Kumar.Parser where
 
 
 import Language.LBNF
+import Data.List (lines)
 
 
 bnfc [lbnf|
@@ -87,9 +88,14 @@ entrypoints Expr, Decl, CaseAlt, Pattern ;
 
   |]
 
+replace :: Eq a => a -> a -> [a] -> [a]
+replace a b = map $ \c -> if c == a then b else c
 
+clean ('\\':'n':s) = ' ' : clean s
+clean (c:s) = c : clean s
+clean [] = []
 
 parseExpr :: String -> Expr
-parseExpr s = case pExpr (myLexer s) of
+parseExpr s = case pExpr (myLexer (clean s)) of
   Ok e -> e
   Bad s -> error s
