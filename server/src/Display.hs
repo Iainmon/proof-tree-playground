@@ -39,9 +39,9 @@ instance Latex Value where
   latex (VCon "[]" []) = "[]"
   latex (VCon ":" [v1,v2]) = latex v1 ++ ":" ++ latex v2
   latex (VCon n vs) = n ++ " " ++ intercalate " " (map latex vs)
-  latex (VClosure x e rho) = "$($" ++ "\\textsf{\\textbf{closure}} " ++ x ++ "$\\to$" ++ "..." ++ "$)$"-- ++ " " ++ latexEnv rho
+  latex (VClosure x e rho) = "$($" ++ "\\textsf{\\textbf{closure}} " ++ x ++ "$\\to$" ++ latex e ++ "$)$"-- ++ " " ++ latexEnv rho
 
 
 instance Latex EvalJ where
-  latex (EvalJ r e v) = latexEnv r ++ " \\vdash \\texttt{" ++ latex e ++ "} \\Rightarrow \\texttt{" ++ latex v ++ "}"
+  latex (EvalJ r e v) = {-latexEnv r ++-} "\\{\\ldots\\} \\vdash \\texttt{" ++ latex e ++ "} \\Rightarrow \\texttt{" ++ latex v ++ "}"
 
