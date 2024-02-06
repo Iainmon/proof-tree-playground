@@ -27,13 +27,13 @@ ex' = infer [] ex
 instance Explain EvalJ where
 
   {- Int -}
-  premises (EvalJ r (EInt n) v) = [[]]
+  premises (EvalJ r (EInt n) v) | eval r (EInt n) == v = [[]]
 
   {- Con -}
-  premises (EvalJ r (ECon n) v) = [[]]
+  premises (EvalJ r (ECon n) v) | eval r (ECon n) == v = [[]]
 
   {- Var -}
-  premises (EvalJ r (EVar x) v) = [[]]
+  premises (EvalJ r (EVar x) v) | eval r (EVar x) == v = [[]]
 
   {- Fun -}
   premises (EvalJ r (EFun x e) (VClosure x' e' r')) = [[]]
@@ -42,7 +42,7 @@ instance Explain EvalJ where
   premises (EvalJ r (EApp e1 e2) v)
     | (VClosure x e3 r') <- eval r e1
     , v2 <- eval r e2
-      = [[EvalJ r e1 (VClosure x e3 r), EvalJ r e2 v2, EvalJ ((x,v2):r') e3 v]]
+      = [[EvalJ r e1 (VClosure x e3 r'), EvalJ r e2 v2, EvalJ ((x,v2):r') e3 v]]
   
   {- AppCon -}
   premises (EvalJ r (EApp e1 e2) v)
@@ -61,9 +61,9 @@ instance Explain EvalJ where
 
   {- Case -}
   premises (EvalJ r (ECase e alts) v)
-    | v <- eval r e
-    , Just (r',e') <- firstMatch v alts
-      = [[EvalJ r e v, EvalJ (r'++r) e' v]]
+    | v' <- eval r e
+    , Just (r',e') <- firstMatch v' alts
+      = [[EvalJ r e v', EvalJ (r'++r) e' v]]
 
   {- IfTrue -}
   premises (EvalJ r (EIf e1 e2 e3) v)

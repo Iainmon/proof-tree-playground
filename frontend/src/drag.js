@@ -2,7 +2,7 @@
 
 // This code if from w3 schools. neet to revise
 
-export function dragElement(elmnt) {
+export function dragElement_(elmnt) {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     if (document.getElementById(elmnt.id)) {
       // if present, the header is where you move the DIV from:
