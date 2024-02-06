@@ -72,12 +72,28 @@ builtInNum BOAdd = Just (+)
 builtInNum BOSub = Just (-)
 builtInNum BOMul = Just (*)
 builtInNum BODiv = Just div
+builtInNum _ = Nothing
+
+builtInBool :: BinOp -> Maybe (Int -> Int -> Bool)
+builtInBool BOEq = Just (==)
+builtInBool BOLt = Just (<)
+builtInBool BOGt = Just (>)
+builtInBool BOLe = Just (<=)
+builtInBool BOGe = Just (>=)
+builtInBool _ = Nothing
+-- builtInBool BOAnd = Just (&&)
+-- builtInBool BOOr = Just (||)
+
 
 evalBuiltIn :: BinOp -> Value -> Value -> Maybe Value
 evalBuiltIn op v1 v2 | Just f <- builtInNum op
  = do n1 <- numValue v1
       n2 <- numValue v2
       return (VCon (show (f n1 n2)) [])
+evalBuiltIn op v1 v2 | Just f <- builtInBool op
+  = do b1 <- numValue v1
+       b2 <- numValue v2
+       return (VCon (show (f b1 b2)) [])
 
 
 ex0 = parseExpr "1"

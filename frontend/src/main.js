@@ -20,9 +20,14 @@ import { CodeBox } from './CodeBox.js';
 
 import './App.scss';
 
-
-
 let proofTree = {
+    conclusionSource: '\\rho \\vdash e \\Rightarrow v',
+    shown: true,
+    selected: true,
+    premises: []
+}
+
+let proofTree_ = {
     conclusionSource: '\\Gamma \\vdash (1,(2,3)) : Z \\times (Z \\times Z)',
     shown: true,
     selected: true,

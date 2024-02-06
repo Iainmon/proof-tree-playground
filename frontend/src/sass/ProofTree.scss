@@ -40,8 +40,8 @@
 .proof-tree-conclusion {
     display: block;
     width: max-content;
-    margin-top: 2px;
-    margin-bottom: 2px;
+    padding-top: 2px;
+    padding-bottom: 2px;
 }
 
 .proof-tree-premises-spacer {
@@ -50,5 +50,6 @@
 }
 
 .proof-tree-selected-node {
-    background-color: $primary;
+    background-color: teal;
+    border-radius: 0.5em;
 }

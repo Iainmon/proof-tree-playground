@@ -77,12 +77,27 @@ pattern BOSub = "-"
 pattern BOMul = "*"
 pattern BODiv = "/"
 
+pattern BOEq,BOGt,BOGe,BOLt,BOLe,BOAnd,BOOr :: BinOp
+pattern BOEq = "=="
+pattern BOGt = ">"
+pattern BOGe = ">="
+pattern BOLt = "<"
+pattern BOLe = "<="
+pattern BOAnd = "&&"
+pattern BOOr = "||"
 
 builtIn :: BinOp -> Bool
 builtIn "+" = True
 builtIn "-" = True
 builtIn "*" = True
 builtIn "/" = True
+builtIn "==" = True
+builtIn ">" = True
+builtIn ">=" = True
+builtIn "<" = True
+builtIn "<=" = True
+builtIn "&&" = True
+builtIn "||" = True
 builtIn _ = False
 
 pattern ELeaf :: Expr
