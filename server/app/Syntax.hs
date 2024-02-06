@@ -2,7 +2,7 @@ module Syntax where
 
 import Logic.Proof
 import Data.List (intercalate)
-import Latex
+import Text.Latex
 
 data Expr
   = Lit Int

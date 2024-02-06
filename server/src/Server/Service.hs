@@ -5,7 +5,7 @@ module Server.Service where
 
 import Data.Aeson.Types
 
-import Latex
+import Text.Latex
 import qualified Parser
 import Data.Text.Lazy hiding (map)
 import Logic.Proof

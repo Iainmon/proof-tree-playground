@@ -35,7 +35,7 @@ position token BinOp7P ('*' | '/');
 position token BinOp6P ('+' | '-');
 position token BinOp5P (':' | ('+' '+'));
 position token BinOp4P ((('<' | '>' | '=') ('=')) | '<' | '>' );
-position token Colon ':';
+position token Colon   (':' | [":"]);
 
 
 EVar.            Expr10 ::= LIdent ;
@@ -58,8 +58,11 @@ EBinOp4.         Expr4 ::= Expr4 BinOp4P Expr5 ;
 coercions Expr 10 ;
 separator Expr "," ;
 
+(:[]).           [LIdent] ::= LIdent;
+(:).             [LIdent] ::= LIdent [LIdent];
+
 DSimp.           Decl ::= LIdent "=" Expr ;
-DRec.            Decl ::= "rec" LIdent LIdent "=" Expr ;
+DRec.            Decl ::= "rec" LIdent [LIdent] "=" Expr ;
 DType.           Decl ::= "data" UIdent "=" [ConDef] ;
 (:[]).           [Decl] ::= Decl;
 (:).             [Decl] ::= Decl "and" [Decl] ;
@@ -77,14 +80,16 @@ CaseAlt.         CaseAlt ::= Pattern "->" Expr ;
 (:[]).           [CaseAlt] ::= CaseAlt;
 (:).             [CaseAlt] ::= CaseAlt ";" [CaseAlt] ;
 
-PVar.           Pattern2 ::= LIdent ;
-PInt.           Pattern2 ::= Number ;
-PAny.           Pattern2 ::= "_" ;
-PListNil.       Pattern2 ::= "[" "]" ;
-PCons.          Pattern1 ::= UIdent [Pattern2];
-PListCons.      Pattern  ::= Pattern1 Colon Pattern ;
-coercions Pattern 2 ;
-separator Pattern2 "" ;
+PVar.           Pattern1 ::= LIdent ;
+PInt.           Pattern1 ::= Number ;
+PAny.           Pattern1 ::= "_" ;
+PListNil.       Pattern1 ::= "[" "]" ;
+PCons.          Pattern1 ::= UIdent [Pattern];
+PListCons.      Pattern  ::= Pattern1 BinOp5P Pattern ;
+coercions Pattern 1 ;
+separator Pattern " " ;
+
+Col.           ColonNT ::= Colon ;
 
 entrypoints Expr, Decl, CaseAlt, Pattern ;
 

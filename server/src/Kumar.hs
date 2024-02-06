@@ -100,8 +100,8 @@ isLeaf _ = False
 -- pattern ELetIn :: Name -> Expr -> Expr -> Expr
 -- pattern ELetIn x e1 e2 = ELet (DSimp x e1) e2
 
-data TypeName 
-  = TNLit Name 
+data TypeName
+  = TNLit Name
   | TNList TypeName
   | TNCons Name [TypeName]
   deriving Eq
@@ -140,7 +140,7 @@ conValue (VCon n []) = Just n
 conValue _ = Nothing
 
 numValue :: Value -> Maybe Int
-numValue v = do n <- conValue v 
+numValue v = do n <- conValue v
                 readMaybe n :: Maybe Int
 
 boolValue :: Value -> Maybe Bool
@@ -210,7 +210,8 @@ transExpr (K.EBinOp4 e1 (K.BinOp4P (_,bo)) e2) = EBinOp (transExpr e1) bo (trans
 
 transDecl :: K.Decl -> Decl
 transDecl (K.DSimp x e) = DSimp (transLIdent x) (transExpr e)
-transDecl (K.DRec x y e) = DRec (transLIdent x) (transLIdent y) (transExpr e)
+transDecl (K.DRec x [y] e) = DRec (transLIdent x) (transLIdent y) (transExpr e)
+transDecl (K.DRec x (y:ys) e) = DRec (transLIdent x) (transLIdent y) $ foldl (flip EFun) (transExpr e) (map transLIdent ys)
 transDecl (K.DType x cs) = DType (transUIdent x) (map transConDef cs)
 
 transConDef :: K.ConDef -> ConDef

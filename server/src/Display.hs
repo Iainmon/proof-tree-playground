@@ -1,6 +1,6 @@
 module Display where
 
-import Latex
+import Text.Latex
 import Logic.Proof
 import Kumar
 import Operational
@@ -9,11 +9,6 @@ import Data.List (intercalate)
 pt' :: String -> Proof EvalJ
 pt' = mkProof . parseExpr
 
-type Tex = String
-
-latexParen :: Latex a => (a -> Bool) -> a -> Tex
-latexParen isSimple x | not $ isSimple x = latex x
-                      | otherwise  = "(" ++ latex x ++ ")"
 
 instance Latex Expr where
   latex (EVar x) = x
