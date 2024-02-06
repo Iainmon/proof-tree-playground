@@ -90,3 +90,9 @@ instance Explain EvalJ where
   premises (EvalJ r (EList es) v) 
     | Just e <- desugar (EList es)
       = [[EvalJ r e v]]
+
+  premises (EvalJ r e v)
+    | Just e' <- desugar e
+      = [[EvalJ r e' v]]
+  
+  premises _ = []

@@ -13,6 +13,7 @@ import Web.Scotty
 import qualified Display
 import qualified Kumar as K
 import qualified Operational
+import qualified Parse.Kumar.Parser as KP
 
 import Network.HTTP.Types (status500)
 import Control.Exception (SomeException)
@@ -37,19 +38,25 @@ parseService = post "/parse" $ catch action handle
   where action = do
           req <- jsonData :: ActionM ParseRequest
           let e = source req
-          liftIO $ print e
+          liftIO $ putStrLn ("[input]\t " ++ show e)
+          liftIO $ putStrLn ("[tokens]\t " ++ show (KP.tokenize e))
           case K.parseExprSafe e of 
             Right e' -> do
+              let ep = KP.parseExpr e
+              liftIO $ putStrLn ("[parsed]\t " ++ show ep)
+              liftIO $ putStrLn ""
+              liftIO $ putStrLn ("[expr]\t " ++ show e')
+              liftIO $ putStrLn ""
               let ej = Operational.infer [] e'
-              liftIO $ print ej
+              liftIO $ putStrLn ("[query]\t " ++ show ej)
             Left e' -> do
-              () <- liftIO $ print e'
+              () <- liftIO $ putStrLn ("[error]\t " ++ show e')
               return ()
           let tr = Display.pt' e -- pt' (Parser.parse e)
           -- liftIO $ print tr
           json $ fmap latex tr
         handle e = do
           status status500
-          liftIO $ print (e :: SomeException)
+          liftIO $ putStrLn ("error message: " ++ show (e :: SomeException))
           json $ object ["error" .= pack (show e)]
 

@@ -85,6 +85,18 @@ builtIn "*" = True
 builtIn "/" = True
 builtIn _ = False
 
+pattern ELeaf :: Expr
+pattern ELeaf <- (isLeaf -> True)
+
+isLeaf :: Expr -> Bool
+isLeaf (EVar _) = True
+isLeaf (EInt _) = True
+isLeaf (ECon _) = True
+isLeaf (EList []) = True
+isLeaf (EBinFn _) = True
+isLeaf _ = False
+
+
 -- pattern ELetIn :: Name -> Expr -> Expr -> Expr
 -- pattern ELetIn x e1 e2 = ELet (DSimp x e1) e2
 
@@ -153,6 +165,7 @@ instance Show Value where
 desugar :: Expr -> Maybe Expr
 desugar (EList []) = Just (ECon "[]")
 desugar (EList (e:es)) = Just (EApp (EApp (ECon ":") e) (EList es))
+desugar (EBinOp e1 [':'] e2) = Just (EApp (EApp (ECon ":") e1) e2)
 desugar _ = Nothing
 
 parseExpr :: String -> Expr

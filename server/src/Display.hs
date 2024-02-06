@@ -9,6 +9,12 @@ import Data.List (intercalate)
 pt' :: String -> Proof EvalJ
 pt' = mkProof . parseExpr
 
+type Tex = String
+
+latexParen :: Latex a => (a -> Bool) -> a -> Tex
+latexParen isSimple x | not $ isSimple x = latex x
+                      | otherwise  = "(" ++ latex x ++ ")"
+
 instance Latex Expr where
   latex (EVar x) = x
   latex (EInt n) = show n
@@ -17,16 +23,16 @@ instance Latex Expr where
   latex (EFun x e) = "fun " ++ x ++ " -> " ++ latex e
   latex (ELet (DSimp x e1) e2) = "let " ++ x ++ " = " ++ latex e1 ++ " in " ++ latex e2
   latex (ERec ds e2) = "let " ++ intercalate " and " (map latex ds) ++ " in " ++ latex e2
-  latex (ECase e alts) = "case " ++ latex e ++ " of \\{ " ++ intercalate " ; " (map (\(p,e) -> latex p ++ " -> " ++ latex e) alts) ++ " \\}"
-  latex (EApp e1 e2) | simple e2 = latex e1 ++ " " ++ latex e2
-    where simple (EVar _) = True
-          simple (ECon _) = True
-          simple (EInt _) = True
-          simple (EList _) = True
-          simple (EBinOp _ _ _) = True
-          simple _ = False
-  latex (EApp e1 e2) = latex e1 ++ " (" ++ latex e2 ++ ")"
-  latex (EBinOp e1 op e2) = "(" ++ latex e1 ++ " " ++ op ++ " " ++ latex e2 ++ ")"
+  latex (ECase e alts) = "case " ++ latex e ++ " of \\{ " ++ intercalate " ; " (map (\(p,e) -> latex p ++ " -> " ++ latex e) alts) ++ " \\}"    
+  latex (EApp e1 e2) = latex e1 ++ " " ++ latexParen simple e2
+    where simple ELeaf = False
+          simple (EList _) = False
+          simple (EBinOp {}) = True
+          simple _ = True
+  latex (EBinOp e1 op e2) = latexParen simple e1 ++ " " ++ op ++ " " ++ latexParen simple e2
+    where simple ELeaf = False
+          simple (EList _) = False
+          simple _ = True
   latex (EIf e1 e2 e3) = "if " ++ latex e1 ++ " then " ++ latex e2 ++ " else " ++ latex e3
 instance Latex Decl where
   latex (DSimp x e) = x ++ " = " ++ latex e

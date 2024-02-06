@@ -30,7 +30,7 @@ bnfc [lbnf|
 position token UIdent (upper (letter | digit | '_')*);
 position token LIdent (lower (letter | digit | '_')*);
 position token Number (('-' (digit+)) | (digit+));
-position token BinOp (':' | '+' | '-' | '*' | '/' | '=' | '<' | '>' | '.')+;
+position token BinOp  (('+' | '-' | '*' | '/' | '=' | '<' | '>' | '.') | (('+' | '-' | '*' | '/' | '=' | '<' | '>' | '.' | ':') ('+' | '-' | '*' | '/' | '=' | '<' | '>' | '.' | ':')+));
 position token BinOp7P ('*' | '/');
 position token BinOp6P ('+' | '-');
 position token BinOp5P (':' | ('+' '+'));
@@ -52,7 +52,7 @@ EApp.            Expr9 ::= Expr9 Expr10 ;
 EBinOp8.         Expr8 ::= Expr8 BinOp Expr9 ;
 EBinOp7.         Expr7 ::= Expr7 BinOp7P Expr8 ;
 EBinOp6.         Expr6 ::= Expr6 BinOp6P Expr7 ;
-EBinOp5.         Expr5 ::= Expr5 BinOp5P Expr6 ;
+EBinOp5.         Expr5 ::= Expr6 BinOp5P Expr5 ; -- Right assoc
 EBinOp4.         Expr4 ::= Expr4 BinOp4P Expr5 ;
 
 coercions Expr 10 ;
@@ -98,14 +98,16 @@ clean ('\\':'n':s) = ' ' : clean s
 clean (c:s) = c : clean s
 clean [] = []
 
+tokenize :: String -> [Token]
+tokenize = myLexer . clean
 
 parseExpr :: String -> Expr
-parseExpr s = case pExpr (myLexer (clean s)) of
+parseExpr s = case pExpr (tokenize s) of
   Ok e -> e
   Bad s -> error s
 
 parseExprSafe :: String -> Either String Expr
-parseExprSafe s = case pExpr (myLexer (clean s)) of
+parseExprSafe s = case pExpr (tokenize s) of
   Ok e -> Right e
   Bad err -> Left err
 
