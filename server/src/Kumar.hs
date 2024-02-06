@@ -143,9 +143,17 @@ showListValue v = show v
 instance Show Value where
   show (VCon n []) = n
   show v@(VCon ":" [v1,v2]) = "[" ++ showListValue v ++ "]"
-  show (VCon n vs) = "(" ++ n ++ " " ++ intercalate " " [show v | v <- vs] ++ ")"
+  show (VCon n vs) = n ++ " " ++ intercalate " " [if simple v then show v else "(" ++ show v ++ ")" | v <- vs]
+    where simple (VCon n []) = True
+          simple (VCon ":" _) = True
+          simple _ = False
   show (VClosure n e env) = "(clo " ++ n ++ " -> " ++ show e ++ ")"
 
+
+desugar :: Expr -> Maybe Expr
+desugar (EList []) = Just (ECon "[]")
+desugar (EList (e:es)) = Just (EApp (EApp (ECon ":") e) (EList es))
+desugar _ = Nothing
 
 parseExpr :: String -> Expr
 parseExpr s = transExpr (K.parseExpr s)
@@ -208,5 +216,5 @@ transPattern (K.PInt n) = PCons (show (transNumber n)) []
 transPattern K.PAny = PAny
 transPattern K.PListNil = PCons "[]" []
 transPattern (K.PCons x ps) = PCons (transUIdent x) (map transPattern ps)
-transPattern (K.PListCons p1 p2) = PCons ":" (map transPattern [p1,p2])
+transPattern (K.PListCons p1 _ p2) = PCons ":" (map transPattern [p1,p2])
 

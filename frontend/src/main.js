@@ -5,6 +5,7 @@ import useLocalStorage from 'use-local-storage';
 import { createRoot } from 'react-dom/client';
 
 import Button from 'react-bootstrap/Button';
+import Alert from 'react-bootstrap/Alert';
 import { Container } from 'react-bootstrap';
 import Form from 'react-bootstrap/Form';
 
@@ -185,10 +186,16 @@ function Handler() {
 
 function SourceInput({ handleNewTree }) {
     const [source, setSource] = useLocalStorage('expression','let x = Just 1 in let y = Nothing in case x of { Just z -> Just y ; Nothing -> 0 }');
-    
+    const [errorMessages, setErrorMessages] = useState('');
     async function handleClick() {
-        const tree = await getProofTree(source);
-        handleNewTree(tree);
+        try {
+            const tree = await getProofTree(source);
+            handleNewTree(tree);
+            setErrorMessages('');
+        } catch (e) {
+            console.log(e.response.status,e.response.data);
+            setErrorMessages(e.response.data.error);
+        }
     }
 
     function onChange(text) {
@@ -199,6 +206,9 @@ function SourceInput({ handleNewTree }) {
 
     return (
         <>
+            <Alert variant="danger" show={errorMessages !== ''} onClose={() => setErrorMessages('')} dismissible>
+                {errorMessages}
+            </Alert>
             <CodeBox value={source} onChange={onChange} />
             <Button variant="info" onClick={handleClick}>Submit</Button>
         </>

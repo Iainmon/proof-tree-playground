@@ -14,7 +14,7 @@ eval env (EInt n) = VCon (show n) []
 {- Con -}
 eval env (ECon n) = VCon n []
 {- Var -}
-eval env (EVar x) = fromJust (lookup x env)
+eval env (EVar x) | Just v <- lookup x env = v
 {- Fun -}
 eval env (EFun x e) = VClosure x e env
 {- App -}
@@ -29,12 +29,17 @@ eval env (ERec [DRec f x e1] e2) = eval ((f, VClosure x (ERec [DRec f x e1] e1) 
 eval env (ECase e alts) | v <- eval env e, Just (envi,ei) <- firstMatch v alts = eval (envi ++ env) ei
 {- BuiltInOp (incomplete) -}
 eval env (EBinOp e1 op e2) | BuiltInOp <- op, Just v <- evalBuiltIn op (eval env e1) (eval env e2) = v
+{- IfTrue -}
+eval env (EIf e1 e2 e3) | eval env e1 == VCon "True" [] = eval env e2
+{- IfFalse -}
+eval env (EIf e1 e2 e3) | eval env e1 == VCon "False" [] = eval env e3
 
 {- List -}
 
 {- Desugar -}
-eval env (EList []) = VCon "[]" []
-eval env (EList (e:es)) = eval env (EApp (EApp (ECon ":") e) (EList es))
+eval env e | Just e' <- desugar e = eval env e'
+-- eval env (EList []) = VCon "[]" []
+-- eval env (EList (e:es)) = eval env (EApp (EApp (ECon ":") e) (EList es))
 
 eval env e = error ("eval: " ++ show env ++ " |- " ++ show e ++ " -> ?")
 

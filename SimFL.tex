@@ -4,7 +4,7 @@
 \usepackage{stmaryrd}
 \usepackage[a4paper, total={6in, 8in}]{geometry}
 
-%\usepackage[a4paper,margin=1cm]{geometry}
+%\usepackage[letter,margin=1cm]{geometry}
 \usepackage[usenames,dvipsnames]{xcolor}
 
 \title{SimFL}
@@ -82,8 +82,13 @@ v\in \textsc{Value}::=\ & C \ \overline{v} \\
 \infer[\tsc{Let}]{\envj \rho {\code{let $x$ = $e_1$ in $e_2$}} {v_2}}{\envj \rho {e_1} {v_1} && \envj {\rho[x\mapsto v_1]} {e_2} {v_2}}\\[12pt]
 \infer[\tsc{LetRec}]{\envj \rho {\code{let rec $f$ $x$ = $e_1$ in $e_2$}} {v}}{\envj{\rho[f \mapsto \closure x {\code{let rec $f$ $x$ = $e_1$ in $e_1$}}{\rho}]}{e_2}{v}}\\[12pt]
 \infer[\tsc{Case}]{\envj \rho {\code{case $e$ of \{$\overline{\langle p_n \texttt{ -> } e_n\rangle}$\}}} {v_2}}{\envj \rho {e} {v} && v\triangleright p_i : \sigma_i && \envj {\rho,\sigma_i}{e_i}{v_i} && i \leq n}\\[12pt]
+\infer[\tsc{IfTrue}]{\envj \rho {\code{if $e_1$ then $e_2$ else $e_3$}} {v_2}}{\envj \rho {e_1} {\code{True}} && \envj \rho {e_2} {v_2}}\qquad
+\infer[\tsc{IfFalse}]{\envj \rho {\code{if $e_1$ then $e_2$ else $e_3$}} {v_3}}{\envj \rho {e_1} {\code{False}} && \envj \rho {e_3} {v_3}}
+\\[12pt]
 \infer[\tsc{BuiltInOp}]{\envj \rho {e_1 \binop e_2} {v_1\llbracket\bullet \rrbracket v_2}}{\envj \rho {e_1} {v_1} && \envj {\rho} {e_2} {v_2} && \textsf{builtin}\, \binop}\\[12pt]
 \infer[\tsc{BuiltInFun}]{\envj \rho {\texttt{($\binop$)}} {v}}{\envj \rho {\code{fun a \texttt{->} (fun b \texttt{->} a $\binop$ b)}} {v} && \textsf{builtin}\, \binop}\\[12pt]
+\infer[\tsc{List}_1]{\envj \rho {\code{[ ]}} {v}}{\code{[ ]}\looparrowright e && \envj \rho e v}\qquad 
+\infer[\tsc{List}_2]{\envj \rho {\code{[$e_1$,$\ldots$,$e_n$]}} {v}}{1 \leq n && \code{[$e_1$,$\ldots$,$e_n$]}\looparrowright e && \envj \rho e v}
 \end{gather*}
 
 \begin{gather*}
@@ -93,7 +98,8 @@ v\in \textsc{Value}::=\ & C \ \overline{v} \\
 \end{gather*}
 
 \begin{gather*}
-\texttt{\textsf{\textbf{closure}} x -> e}	
+\infer[\tsc{Nil}]{\code{[ ]}\looparrowright \code{[ ]}}{}\qquad
+\infer[\tsc{Nil}]{\code{[$e_1$,$\ldots$,$e_n$]}\looparrowright \code{[ ]}}{}
 \end{gather*}
 
 

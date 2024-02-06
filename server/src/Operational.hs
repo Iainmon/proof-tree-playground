@@ -65,14 +65,28 @@ instance Explain EvalJ where
     , Just (r',e') <- firstMatch v alts
       = [[EvalJ r e v, EvalJ (r'++r) e' v]]
 
+  {- IfTrue -}
+  premises (EvalJ r (EIf e1 e2 e3) v)
+    | eval r e1 == VCon "True" []
+      = [[EvalJ r e1 (VCon "True" []), EvalJ r e2 v]]
+
+  {- IfFalse -}
+  premises (EvalJ r (EIf e1 e2 e3) v)
+    | eval r e1 == VCon "False" []
+      = [[EvalJ r e1 (VCon "False" []), EvalJ r e3 v]]
+
+  -- {- If -}
+  -- premises (EvalJ r (EIf e1 e2 e3) v) 
+  --     = [[EvalJ r e1 (VCon "True" []), EvalJ r e2 v]
+  --       ,[EvalJ r e1 (VCon "False" []), EvalJ r e3 v]]
+
   {- BuiltInOp -}
   premises (EvalJ r (EBinOp e1 BuiltInOp e2) v)
     | v1 <- eval r e1
     , v2 <- eval r e2
       = [[EvalJ r e1 v1, EvalJ r e2 v2]]
 
-
-  {- Desugar -}
-
-  {- Let -}
-  -- premises (EvalJ env e v) = [[EvalJ env e v]]
+  {- List -}
+  premises (EvalJ r (EList es) v) 
+    | Just e <- desugar (EList es)
+      = [[EvalJ r e v]]
