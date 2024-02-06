@@ -132,6 +132,8 @@ function Handler() {
             
             const maxIdx = Math.max(0,parentNode.premises.length - 1);
             newPath[lastIdx] = Math.min(maxIdx,newPath[lastIdx] + 1);
+        } else if (key === 'h') {
+            selectedNode.hidden = !selectedNode.hidden;
         } else {
             return;
         }
@@ -249,6 +251,7 @@ function keyPress(event) {
         38: 'up',
         39: 'right',
         40: 'down',
+        72: 'h',
     };
 
     const key = keyMap[event.keyCode];

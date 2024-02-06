@@ -18,6 +18,7 @@ function populateTree({ conclusion, premises }) {
         conclusionSource: conclusion,
         premises: premises.map(p => populateTree(p)),
         shown: false,
+        hidden: false,
         selected: false,
     };
 }

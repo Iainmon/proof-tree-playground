@@ -16,7 +16,7 @@ function Conclusion({ conclusionSource }) {
     );
 }
 
-export function Node({ tree: {conclusionSource, premises, shown, selected } }) {
+export function Node({ tree: {conclusionSource, premises, shown, selected, hidden } }) {
     if (!shown) {
         return null;
     }
@@ -31,11 +31,11 @@ export function Node({ tree: {conclusionSource, premises, shown, selected } }) {
             spacedPremisesNodes.push(<div className="proof-tree-premises-spacer" key={i + 's'} />);
         }
     }
-    if (spacedPremisesNodes.length === 0) {
+    if (spacedPremisesNodes.length === 0 || hidden === true) {
         return (
             <div className="proof-tree-node">
                 <div className={'proof-tree-conclusion' + (selected === true ? ' proof-tree-selected-node' : '')}>
-                    <Conclusion conclusionSource={conclusionSource} />
+                    <Conclusion conclusionSource={hidden === true ? '\\ldots ': conclusionSource} />
                 </div>
             </div>
         );
@@ -46,7 +46,7 @@ export function Node({ tree: {conclusionSource, premises, shown, selected } }) {
                 {spacedPremisesNodes.map(n => n)}
             </div>
             <div className={'proof-tree-conclusion' + (selected === true ? ' proof-tree-selected-node' : '')}>
-                <Conclusion conclusionSource={conclusionSource} />
+                <Conclusion conclusionSource={hidden === true ? '\\ldots ': conclusionSource} />
             </div>
         </div>
     );
