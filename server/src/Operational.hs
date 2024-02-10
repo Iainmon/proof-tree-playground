@@ -56,8 +56,11 @@ instance Explain EvalJ where
       = [[EvalJ r e1 v1, EvalJ ((x,v1):r) e2 v]]
 
   {- LetRec -}
-  premises (EvalJ r (ERec [DRec f x e1] e2) v)
-    = [[EvalJ ((f,VClosure x (ERec [DRec f x e1] e1) r):r) e2 v]]
+  premises (EvalJ r (ERec ds e) v)
+    | r' <- [(fi, VClosure xi (ERec ds ei) r) | DRec fi xi ei <- ds]
+      = [[EvalJ (r'++r) e v]]
+  -- premises (EvalJ r (ERec [DRec f x e1] e2) v)
+  --   = [[EvalJ ((f,VClosure x (ERec [DRec f x e1] e1) r):r) e2 v]]
 
   {- Case -}
   premises (EvalJ r (ECase e alts) v)
@@ -65,20 +68,20 @@ instance Explain EvalJ where
     , Just (r',e') <- firstMatch v' alts
       = [[EvalJ r e v', EvalJ (r'++r) e' v]]
 
-  {- IfTrue -}
-  premises (EvalJ r (EIf e1 e2 e3) v)
-    | eval r e1 == VCon "True" []
-      = [[EvalJ r e1 (VCon "True" []), EvalJ r e2 v]]
+  -- {- IfTrue -}
+  -- premises (EvalJ r (EIf e1 e2 e3) v)
+  --   | eval r e1 == VCon "True" []
+  --     = [[EvalJ r e1 (VCon "True" []), EvalJ r e2 v]]
 
-  {- IfFalse -}
-  premises (EvalJ r (EIf e1 e2 e3) v)
-    | eval r e1 == VCon "False" []
-      = [[EvalJ r e1 (VCon "False" []), EvalJ r e3 v]]
+  -- {- IfFalse -}
+  -- premises (EvalJ r (EIf e1 e2 e3) v)
+  --   | eval r e1 == VCon "False" []
+  --     = [[EvalJ r e1 (VCon "False" []), EvalJ r e3 v]]
 
   -- {- If -}
-  -- premises (EvalJ r (EIf e1 e2 e3) v) 
-  --     = [[EvalJ r e1 (VCon "True" []), EvalJ r e2 v]
-  --       ,[EvalJ r e1 (VCon "False" []), EvalJ r e3 v]]
+  premises (EvalJ r (EIf e1 e2 e3) v) 
+      = [[EvalJ r e1 (VCon "True" []), EvalJ r e2 v]
+        ,[EvalJ r e1 (VCon "False" []), EvalJ r e3 v]]
 
   {- BuiltInOp -}
   premises (EvalJ r (EBinOp e1 BuiltInOp e2) v)

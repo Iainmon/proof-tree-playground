@@ -1,11 +1,11 @@
+{-# LANGUAGE ViewPatterns, PatternSynonyms #-}
+
 module Semantic where
 
 import Kumar
 import Data.Maybe (fromJust)
 import Control.Monad (zipWithM)
 import Data.List (nub)
-
-
 
 
 eval :: Env -> Expr -> Value
@@ -24,16 +24,15 @@ eval env (EApp e1 e2) | VCon n vs <- eval env e1 = VCon n (vs ++ [eval env e2])
 {- Let -}
 eval env (ELet (DSimp x e1) e2) = eval ((x, eval env e1) : env) e2
 {- LetRec (incomplete) -}
-eval env (ERec [DRec f x e1] e2) = eval ((f, VClosure x (ERec [DRec f x e1] e1) env) : env) e2
+-- eval env (ERec [DRec f x e1] e2) = eval ((f, VClosure x (ERec [DRec f x e1] e1) env) : env) e2
+eval env (ERec ds e) = eval (env' ++ env) e
+  where env' = [(fi, VClosure xi (ERec ds ei) env) | DRec fi xi ei <- ds]
 {- Case -}
 eval env (ECase e alts) | v <- eval env e, Just (envi,ei) <- firstMatch v alts = eval (envi ++ env) ei
 {- BuiltInOp (incomplete) -}
 eval env (EBinOp e1 op e2) | BuiltInOp <- op, Just v <- evalBuiltIn op (eval env e1) (eval env e2) = v
-{- IfTrue -}
-eval env (EIf e1 e2 e3) | eval env e1 == VCon "True" [] = eval env e2
-{- IfFalse -}
-eval env (EIf e1 e2 e3) | eval env e1 == VCon "False" [] = eval env e3
-
+{- IfTrue, IfFalse -}
+eval env (EIf e1 e2 e3) | VBool b <- eval env e1 = eval env (if b then e2 else e3)
 {- List -}
 
 {- Desugar -}

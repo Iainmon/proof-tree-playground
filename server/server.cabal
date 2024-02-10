@@ -36,6 +36,7 @@ executable server
         Operational
         Display
         Server.Service
+        Infer
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -52,7 +53,8 @@ executable server
         -- unliftio,
         BNFC-meta,
         BNFC,
-        template-haskell
+        template-haskell,
+        bergamot
     
     hs-source-dirs:   
         app,

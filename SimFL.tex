@@ -1,10 +1,14 @@
 \documentclass{article}
-\usepackage{amsmath,amssymb}
+
 \usepackage{proof}
 \usepackage{stmaryrd}
-\usepackage[a4paper, total={6in, 8in}]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{latexsym}
+%\usepackage[a4paper, total={6in, 8in}]{geometry}
 
-%\usepackage[letter,margin=1cm]{geometry}
+\usepackage[legalpaper,margin=1cm]{geometry}
 \usepackage[usenames,dvipsnames]{xcolor}
 
 \title{SimFL}
@@ -14,46 +18,57 @@
 \def\code#1{\textsf{#1}}
 \def\codesf#1{\textsf{#1}}
 \def\por{\ | \ }
-\def\rt{\Rightarrow}
+\def\rt{\Downarrow}
 \def\binop{\, \text{\textbullet}\, }
 \def\xj#1#2{\langle #1 \ | \ #2 \rangle}
 \def\envj#1#2#3{#1 \vdash #2 \rt #3}
 \def\noenvj#1#2{#1 \rt #2}
-\def\xnf#1#2#3{D,#1 : #2 \rightsquigarrow #3}
+\def\xnf#1#2#3{D,#1 \Rightarrow #2 \rightsquigarrow #3}
 \def\sem#1{\llbracket\, #1 \,\rrbracket}
-\def\closure#1#2#3{(\textsf{\textbf{closure}} \ #1 \to #2,#3)}
+\def\closure#1#2#3{\langle #3 , #1 \to #2\rangle}
 \def\val#1#2#3{(\textsf{\textbf{val}} \ #1 \ {#2} , #3 )}
 \def\tsc#1{\textsc{#1}}
-\def\matchj#1#2#3{#1 \triangleright #2 : #3}
+\def\matchj#1#2#3{#1 \triangleright #2 \leadsto #3}
+\def\defeq{\overset{\textsf{def}}{\equiv}}
 
 \begin{document}
 
 \maketitle
 \section*{Syntax}
 
-\begin{gather*}
- T \in \textsc{TypeCon}\qquad C \in \textsc{DataCon}
-\end{gather*}
+%\begin{gather*}
+% T \in \textsc{TypeCon}\qquad C \in \textsc{DataCon}
+%\end{gather*}
 %\begin{align*}
 %\alpha \in \textsc{TypeVar}
 %datadef\in \textsc{DataDef} ::= \ & \code{data $T$ $\overline{\alpha}$ = $\delta$ }\overline{\langle\texttt{|}\ \delta\rangle}\\
 %\delta \in \textsc{ConDef} ::= \ & \code{$C$ $\overline{\tau}$}
 %\end{align*}
+\begin{gather*}
+n\in \mathbb{Z} \qquad x\in \textsc{Var} \qquad C \in \textsc{DataCon} 	
+\end{gather*}
+
+\begin{align*}
+s\in \textsc{Symbol} ::= \ & \texttt{+} \por \texttt{-} \por \texttt{*} \por \texttt{/} \por \texttt{=} \por \texttt{<} \por \texttt{>} \por \texttt{:} \por \texttt{.} \\
+\binop \in \textsc{BinOp} ::= \ & s\overline{s}
+\end{align*}
 
 \begin{align*}
 e \in \textsc{Expr} ::= \ & x \\
 \por & n \\
 \por & C \\
 \por & \code{[ ]}\\
-\por & \code{[}\,e\,\overline{\langle \code{,}\ e\rangle}\,\code{]}\\
+\por & \code{[}\,e\,\overline{(\code{,}\ e)}\,\code{]}\\
 \por & e \binop e\\
 \por & \texttt{($\binop$)}\\
 \por & \code{fun $x$ \texttt{->} $e$}\\
 \por & e \ e\\
 \por & \code{let $x$ = $e$ in $e$}\\
-\por & \code{let rec $f$ $x$ = $e$ }\overline{\langle\code{and rec $f$ $x$ = $e$}\rangle}\code{ in $e$}\\
-\por & \code{case $e$ of }\texttt{\char`\{} \ \code{$p$ \texttt{->} $e$}\ \overline{\langle \texttt{;} \, \code{$p$ \texttt{->} $e$}\rangle} \ \texttt{\char`\}}\\
+\por & \code{let rec $f$ $x$ = $e$ }\overline{(\code{and rec $f$ $x$ = $e$})}\code{ in $e$}\\
+\por & \code{case $e$ of }\texttt{\char`\{} \ \code{$p$ \texttt{->} $e$}\ \overline{( \texttt{;} \, \code{$p$ \texttt{->} $e$})} \ \texttt{\char`\}}\\
 \por & \code{if $e$ then $e$ else $e$}\\
+\por & \texttt{($\, e \,$)}\\\\
+p \in \textsc{Pattern} ::= \ & \texttt{\_} \por x \por n \por C \ \overline{p} \por \texttt{($\, p\,$)}
 %
 %d \in \textsc{Decl} ::= \ & \code{$f$ = $e$}\\
 %\por & \code{rec $f$ $x$ = $e$}\\
@@ -63,25 +78,79 @@ e \in \textsc{Expr} ::= \ & x \\
 %\por & {\color{Bittersweet}\code{data $T$ $\overline{\alpha}$ = $\delta$ }\overline{\langle\texttt{|}\ \delta\rangle}}\\
 %
 \end{align*}
+
 \begin{align*}
-\binop \in \textsc{BinOp} ::= \ & s\overline{s}\\
-v\in \textsc{Value}::=\ & C \ \overline{v} \\
+v\in \textsc{Value}::= \ & C \ \overline{v} \\
 \por & \closure x e \rho
 \end{align*}
+
+%\begin{align*}
+%%\rho,\sigma \in \textsc{Env} ::=\ & \varnothing \por \rho, x\mapsto v\\	
+%\end{align*}
+
+\begin{align*}
+\rho,\sigma \in \textsc{Env} &::= \mathcal{P}(\textsc{Var} \times \textsc{Value})\\
+x\mapsto v &\defeq (x,v)\\
+\rho[x \mapsto v] &\defeq \{x\mapsto v\}\cup\{x_i \mapsto v_i \in \rho \ | \ x_i \neq x \}\\
+\rho,\sigma &\defeq \sigma \cup \{x_i\mapsto v_i \in \rho \ | \ x_i\not\in \textsf{dom}(\sigma)\}
+\end{align*}
+
+
+
+
+%$ $\\[12pt]
+%
+%\noindent\textbf{Theorem.} Suppose $x\in \textsc{Var}$, $v\in \textsc{Value}$, and $\rho\in\textsc{Env}$. If $\rho : A\to \textsc{Value}$ where $A\subseteq \textsc{Var}$, then $\rho[x\mapsto v]: A\cup \{x\}\to \textsc{Value}$.\\
+%
+%\textit{Proof.} Suppose $x\in \textsc{Var}$, $v\in \textsc{Value}$, and $\rho\in\textsc{Env}$, so $\rho \subseteq \textsc{Var} \times \textsc{Value}$. Suppose $\rho$ is a function on $A\subseteq \textsc{Var}$, so $\rho : A\to \textsc{Value}$. Then $$\rho[x \mapsto v] = \{x\mapsto v\}\cup\{x_i \mapsto v_i \in \rho \ | \ x_i \neq x \}$$
+%so $x\mapsto v = (x,v)\in \rho[x \mapsto v]$ since $(x,v)\in \{x\mapsto v\}$. Now suppose $y\in A\cup \{x\}$, so $y=x$ or $y\in A$. If $y=x$ then $y\mapsto v=x\mapsto v \in \rho[x \mapsto v]$.
+
+
+
 \pagebreak
 
-\section*{Natural Semantics}
+\section*{Semantics}
+
+\subsection*{Pattern Matching}
+
+\begin{gather*}
+\matchj v p \sigma \subseteq \textsc{Value} \times \textsc{Pattern} \times \textsc{Env}
+\end{gather*}
+
+
+\begin{gather*}
+\infer[\tsc{MatchAny}]{\matchj v {\texttt{\_}\,} \varnothing}{}\qquad
+\infer[\tsc{MatchVar}]{\matchj v x {\{x\mapsto v\}}}{}\\[12pt]
+\infer[\tsc{MatchCons}]{\matchj {C\ \hat{v}} {C\ \hat{p}} \sigma}{\forall i \leq n,\ \, \matchj{v_i}{p_i}{\sigma_i} && \bigcap_{j=1}^n \textsf{free}(p_j)=\varnothing && \sigma = \bigcup_{j=1}^n \sigma_j}	
+\end{gather*}
+
+\begin{align*}
+\textsf{free}(p)& \defeq\begin{cases}
+	\{x\} &\text{if $p=x\in \textsc{Var}$}\\
+	\bigcup_{i=1}^n \textsf{free}(p_i) & \text{if $p=C \ p_1 \ \ldots \ p_n$ and $C\in \textsc{Cons}$}\\
+	\varnothing & \text{otherwise}
+\end{cases}
+\end{align*}
+
+\subsection*{Natural Semantics}
+
+\begin{gather*}
+\envj{\rho}{e}{v}\subseteq \textsc{Env}\times \textsc{Expr}\times \textsc{Value}
+\end{gather*}
 
 \begin{gather*}
 \infer[\tsc{Num}]{\envj \rho n n}{}\qquad
-\infer[\tsc{Con}]{\envj \rho C C}{}\qquad
+\infer[\tsc{Cons}]{\envj \rho C C}{}\qquad
 \infer[\tsc{Var}]{\envj \rho x v}{(x,v)\in \rho}\\[12pt]
 \infer[\tsc{Fun}]{\envj \rho {\code{fun $x$ \texttt{->} $e$}} {\closure x e \rho}}{}\\[12pt]
 \infer[\tsc{App}]{\envj \rho {e_1 \ e_2} v_3}{\envj{\rho}{e_1}{\closure x {e_3} {\sigma}} && \envj \rho {e_2} {v_2} && \envj{\sigma [x\mapsto v_2]}{e_3}{v_3}}\\[12pt]
 \infer[\tsc{AppCons}]{\envj{\rho}{e_1\, e_2}{C\ \hat{v},v}}{\envj{\rho}{e_1}{C\ \hat{v}} && \envj{\rho}{e_2}{v}}\\[12pt]
 \infer[\tsc{Let}]{\envj \rho {\code{let $x$ = $e_1$ in $e_2$}} {v_2}}{\envj \rho {e_1} {v_1} && \envj {\rho[x\mapsto v_1]} {e_2} {v_2}}\\[12pt]
-\infer[\tsc{LetRec}]{\envj \rho {\code{let rec $f$ $x$ = $e_1$ in $e_2$}} {v}}{\envj{\rho[f \mapsto \closure x {\code{let rec $f$ $x$ = $e_1$ in $e_1$}}{\rho}]}{e_2}{v}}\\[12pt]
-\infer[\tsc{Case}]{\envj \rho {\code{case $e$ of \{$\overline{\langle p_n \texttt{ -> } e_n\rangle}$\}}} {v_2}}{\envj \rho {e} {v} && v\triangleright p_i : \sigma_i && \envj {\rho,\sigma_i}{e_i}{v_i} && i \leq n}\\[12pt]
+%\infer[\tsc{LetRec}]{\envj \rho {\code{let rec $f$ $x$ = $e_1$ in $e_2$}} {v}}{\envj{\rho[f \mapsto \closure x {\code{let rec $f$ $x$ = $e_1$ in $e_1$}}{\rho}]}{e_2}{v}}\\[12pt]
+%\infer[\tsc{LetRec}*]{\envj \rho {\code{let rec $f_1$ $x_1$ = $e_1$ and $\ldots$ and $f_n$ $x_n$ = $e_n$ in $e$}} {v}}{\sigma = \bigcup_{i = 1}^n \{f_i \mapsto \closure {x_i} {\code{let rec $f_1$ $x_1$ = $e_1$ and $\ldots$ and $f_n$ $x_n$ = $e_n$ in $e_i$}}{\rho}\} && \envj{\rho[f \mapsto v \in \sigma]}{e_2}{v}}\\[12pt]
+\infer[\tsc{LetRec}]{\envj \rho {\code{let rec $f_1$ $x_1$ = $e_1$ and $\ldots$ and $f_n$ $x_n$ = $e_n$ in $e$}} {v}}{ \envj{\rho\begin{bmatrix}f_1 \mapsto \closure {x_1} {\code{let rec $f_1$ $x_1$ = $e_1$ and $\ldots$ and $f_n$ $x_n$ = $e_n$ in $e_1$}}{\rho}\\\vdots\\f_n \mapsto \closure {x_n} {\code{let rec $f_1$ $x_1$ = $e_1$ and $\ldots$ and $f_n$ $x_n$ = $e_n$ in $e_n$}}{\rho}\end{bmatrix}}{e}{v}}\\[12pt]
+%\infer[\tsc{LetRec}***]{\envj \rho {\code{let rec $f_1$ $x_1$ = $e_1$ and $\ldots$ and $f_n$ $x_n$ = $e_n$ in $e$}} {v}}{ \envj{\rho[f_i \mapsto \closure {x_i} {\code{let rec $f_1$ $x_1$ = $e_1$ and $\ldots$ and $f_n$ $x_n$ = $e_n$ in $e_i$}}{\rho} \ | \ 1 \leq i \leq n]}{e}{v}}\\[12pt]
+\infer[\tsc{Case}]{\envj \rho {\code{case $e$ of \{ $p_1 \texttt{ -> } e_1 \texttt{;}$ $\ldots\texttt{;}$ $p_n \texttt{ -> } e_n$\}}} {v_i}}{\envj \rho {e} {v} && \matchj v {p_i} {\sigma_i} && \envj {\rho,\sigma_i}{e_i}{v_i} && i \leq n}\\[12pt]
 \infer[\tsc{IfTrue}]{\envj \rho {\code{if $e_1$ then $e_2$ else $e_3$}} {v_2}}{\envj \rho {e_1} {\code{True}} && \envj \rho {e_2} {v_2}}\qquad
 \infer[\tsc{IfFalse}]{\envj \rho {\code{if $e_1$ then $e_2$ else $e_3$}} {v_3}}{\envj \rho {e_1} {\code{False}} && \envj \rho {e_3} {v_3}}
 \\[12pt]
@@ -91,11 +160,7 @@ v\in \textsc{Value}::=\ & C \ \overline{v} \\
 \infer[\tsc{List}_2]{\envj \rho {\code{[$e_1$,$\ldots$,$e_n$]}} {v}}{1 \leq n && \code{[$e_1$,$\ldots$,$e_n$]}\looparrowright e && \envj \rho e v}
 \end{gather*}
 
-\begin{gather*}
-\infer[\tsc{MatchAny}]{\matchj v {\texttt{\_}\,} \varnothing}{}\qquad
-\infer[\tsc{MatchVar}]{\matchj v x {\{x\mapsto v\}}}{}\\[12pt]
-\infer[\tsc{MatchCons}]{\matchj {C\ \hat{v}} {C\ \hat{p}} \sigma}{\forall i \leq n,\ \, \matchj{v_i}{p_i}{\sigma_i} && \bigcap_{j=1}^n \textsf{free}(p_j)=\varnothing && \sigma = \bigcup_{j=1}^n \sigma_j}	
-\end{gather*}
+
 
 \begin{gather*}
 \infer[\tsc{Nil}]{\code{[ ]}\looparrowright \code{[ ]}}{}\qquad

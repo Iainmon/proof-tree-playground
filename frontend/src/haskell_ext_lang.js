@@ -171,7 +171,7 @@ function switchState(source, setState, f) {
   
     setType("keyword")(
       "case", "class", "data", "default", "deriving", "do", "else", "foreign",
-      "if", "import", "in", "infix", "infixl", "infixr", "instance", "let", "rec",
+      "if", "import", "in", "infix", "infixl", "infixr", "instance", "let", "rec", "and",
       "module", "newtype", "of", "then", "type", "where", "_");
   
     setType("keyword")(
@@ -191,7 +191,7 @@ function switchState(source, setState, f) {
       "String", "True");
   
     setType("builtin")(
-      "abs", "acos", "acosh", "all", "and", "any", "appendFile", "asTypeOf",
+      "abs", "acos", "acosh", "all", "any", "appendFile", "asTypeOf",
       "asin", "asinh", "atan", "atan2", "atanh", "break", "catch", "ceiling",
       "compare", "concat", "concatMap", "const", "cos", "cosh", "curry",
       "cycle", "decodeFloat", "div", "divMod", "drop", "dropWhile", "either",
@@ -202,7 +202,7 @@ function switchState(source, setState, f) {
       "fromIntegral", "fromRational", "fst", "gcd", "getChar", "getContents",
       "getLine", "head", "id", "init", "interact", "ioError", "isDenormalized",
       "isIEEE", "isInfinite", "isNaN", "isNegativeZero", "iterate", "last",
-      "lcm", "length", "lex", "lines", "log", "logBase", "lookup", "map",
+      "lcm", "length", "lex", "lines", "log", "logBase", "lookup",
       "mapM", "mapM_", "max", "maxBound", "maximum", "maybe", "min", "minBound",
       "minimum", "mod", "negate", "not", "notElem", "null", "odd", "or",
       "otherwise", "pi", "pred", "print", "product", "properFraction", "pure",

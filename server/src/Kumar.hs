@@ -161,6 +161,12 @@ numValue v = do n <- conValue v
 boolValue :: Value -> Maybe Bool
 boolValue v = conValue v >>= readMaybe
 
+
+pattern VBool :: Bool -> Value
+pattern VBool b <- (boolValue -> Just b) where
+  VBool b = VCon (show b) []
+
+
 showListValue :: Value -> String
 showListValue (VCon "[]" []) = ""
 showListValue (VCon ":" [v1,VCon "[]" []]) = show v1
