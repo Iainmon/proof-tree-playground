@@ -16,7 +16,7 @@ function Conclusion({ conclusionSource }) {
     );
 }
 
-export function Node({ tree: {conclusionSource, premises, shown, elided, selected, hidden } }) {
+export function Node({ tree: {conclusionSource, premises, shown, elided, flagged, selected, hidden } }) {
     if (!shown) {
         return null;
     }
@@ -34,7 +34,7 @@ export function Node({ tree: {conclusionSource, premises, shown, elided, selecte
     if (spacedPremisesNodes.length === 0 || hidden === true) {
         return (
             <div className="proof-tree-node">
-                <div className={'proof-tree-conclusion' + (selected === true ? ' proof-tree-selected-node' : '')}>
+                <div className={'proof-tree-conclusion' + (selected === true ? ' proof-tree-selected-node' : '') + (flagged === true ? ' proof-tree-flagged-node' : '')}>
                     <Conclusion conclusionSource={hidden === true ? '\\quad\\vdots\\quad ': conclusionSource} />
                 </div>
             </div>
@@ -45,7 +45,7 @@ export function Node({ tree: {conclusionSource, premises, shown, elided, selecte
             <div className="proof-tree-premises" >
                 {spacedPremisesNodes.map(n => n)}
             </div>
-            <div className={'proof-tree-conclusion' + (selected === true ? ' proof-tree-selected-node' : '')}>
+            <div className={'proof-tree-conclusion' + (selected === true ? ' proof-tree-selected-node' : '') + (flagged === true ? ' proof-tree-flagged-node' : '')}>
                 <Conclusion conclusionSource={elided === true ? '\\quad\\vdots\\quad ': conclusionSource} />
             </div>
         </div>

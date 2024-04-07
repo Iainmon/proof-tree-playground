@@ -25,6 +25,7 @@ let proofTree = {
     shown: true,
     selected: true,
     elided: false,
+    flagged: false,
     premises: []
 }
 
@@ -156,6 +157,8 @@ function Handler() {
             // const t = {...tree};
             setStoreTree({...tree});
             console.log('Tree stored', tree);
+        } else if (key === 'f') {
+            selectedNode.flagged = !selectedNode.flagged;
         } else {
             // return;
         }
@@ -279,7 +282,8 @@ function keyPress(event) {
         40: 'down',
         72: 'h',
         69: 'e',
-        83: 's'
+        83: 's',
+        70: 'f',
     };
 
     const key = keyMap[event.keyCode];

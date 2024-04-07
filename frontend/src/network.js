@@ -20,6 +20,7 @@ function populateTree({ conclusion, premises }) {
         shown: false,
         hidden: false,
         elided: false,
+        flagged: false,
         selected: false,
     };
 }
