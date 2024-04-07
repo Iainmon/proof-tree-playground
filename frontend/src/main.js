@@ -24,6 +24,7 @@ let proofTree = {
     conclusionSource: '\\rho \\vdash e \\Rightarrow v',
     shown: true,
     selected: true,
+    elided: false,
     premises: []
 }
 
@@ -103,8 +104,16 @@ let eventHandlers = {
 
 
 function Handler() {
-    const [tree, setTree] = useState(proofTree);
-    const [path, setPath] = useState([0]);
+    // const [storeTree, setStoreTree] = useLocalStorage('proofTree', proofTree, {syncData: false, logger: console.log});
+    // console.log('Old Tree', oldTree === proofTree);
+
+    // console.log(oldTree);
+
+    const [tree, setTree] = useLocalStorage('proofTree', proofTree, {syncData: false, logger: console.log});// useState({...storeTree});
+    const setStoreTree = setTree;
+    // const [oldTree,setStoreTree] = useLocalStorage('proofTree', tree);
+
+    const [path, setPath] = useLocalStorage('path', [0], {syncData: false, logger: console.log});
     const [, forceUpdate] = useReducer(x => x + 1, 0);
     const [x, setX] = useState(0);
     const [y, setY] = useState(0);
@@ -115,6 +124,8 @@ function Handler() {
 
         let selectedNode = getTree(tree,path);
         selectedNode.selected = false;
+
+        // setStoreTree(tree);
 
 
 
@@ -139,8 +150,14 @@ function Handler() {
             newPath[lastIdx] = Math.min(maxIdx,newPath[lastIdx] + 1);
         } else if (key === 'h') {
             selectedNode.hidden = !selectedNode.hidden;
+        } else if (key === 'e') {
+            selectedNode.elided = !selectedNode.elided;
+        } else if (key === 's') {
+            // const t = {...tree};
+            setStoreTree({...tree});
+            console.log('Tree stored', tree);
         } else {
-            return;
+            // return;
         }
 
 
@@ -150,18 +167,22 @@ function Handler() {
 
 
         console.log(newPath);
-        console.log(proofTree);
 
-        setPath(newPath);
-        setTree(tree);
+        setPath([...newPath]);
+        setStoreTree({...tree});
+
+        // setTree(tree);
         forceUpdate();
     }
+    // if (oldTree === proofTree) {
+    //     for (const premise of tree.premises) {
+    //         premise.shown = true;
+    //     }
+    // }
 
-    for (const premise of tree.premises) {
-        premise.shown = true;
-    }
 
     function handleNewTree(tree) {
+        setStoreTree({...tree});
         setTree(tree);
         setPath([0]);
     }
@@ -257,6 +278,8 @@ function keyPress(event) {
         39: 'right',
         40: 'down',
         72: 'h',
+        69: 'e',
+        83: 's'
     };
 
     const key = keyMap[event.keyCode];

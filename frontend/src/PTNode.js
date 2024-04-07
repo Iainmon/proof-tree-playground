@@ -16,7 +16,7 @@ function Conclusion({ conclusionSource }) {
     );
 }
 
-export function Node({ tree: {conclusionSource, premises, shown, selected, hidden } }) {
+export function Node({ tree: {conclusionSource, premises, shown, elided, selected, hidden } }) {
     if (!shown) {
         return null;
     }
@@ -35,7 +35,7 @@ export function Node({ tree: {conclusionSource, premises, shown, selected, hidde
         return (
             <div className="proof-tree-node">
                 <div className={'proof-tree-conclusion' + (selected === true ? ' proof-tree-selected-node' : '')}>
-                    <Conclusion conclusionSource={hidden === true ? '\\ldots ': conclusionSource} />
+                    <Conclusion conclusionSource={hidden === true ? '\\quad\\vdots\\quad ': conclusionSource} />
                 </div>
             </div>
         );
@@ -46,7 +46,7 @@ export function Node({ tree: {conclusionSource, premises, shown, selected, hidde
                 {spacedPremisesNodes.map(n => n)}
             </div>
             <div className={'proof-tree-conclusion' + (selected === true ? ' proof-tree-selected-node' : '')}>
-                <Conclusion conclusionSource={hidden === true ? '\\ldots ': conclusionSource} />
+                <Conclusion conclusionSource={elided === true ? '\\quad\\vdots\\quad ': conclusionSource} />
             </div>
         </div>
     );
