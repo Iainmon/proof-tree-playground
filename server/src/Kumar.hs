@@ -204,7 +204,7 @@ pattern VBool b <- (boolValue -> Just b) where
 listValue :: Value -> Maybe [Value]
 listValue (VCon "[]" []) = Just []
 listValue (VCon ":" [v1,v2]) = (v1:) <$> listValue v2
-
+listValue _ = Nothing
 
 embedEnv :: Env -> Expr -> Expr
 embedEnv env = subst (\x -> lookup x env >>= embedValue)
