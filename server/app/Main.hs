@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
-import Data.Text.Lazy
-import Server.Service
-
-import qualified Alan.Lang
+-- import Data.Text.Lazy
 
 import Web.Scotty
 import Network.Wai.Middleware.Cors
 import qualified Network.Wai as WAI
+
+import Server.Service (parseService)
+
 
 
 

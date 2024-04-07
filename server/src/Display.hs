@@ -7,8 +7,10 @@ import Operational
 import Data.List (intercalate)
 
 pt' :: String -> Proof EvalJ
-pt' = mkProof . parseExpr
+pt' = fmap fillEnv . mkProof . parseExpr
 
+fillEnv :: EvalJ -> EvalJ
+fillEnv (EvalJ rho e v) = EvalJ rho (embedEnv rho e) v
 
 instance Latex Expr where
   latex (EVar x) = x
@@ -36,6 +38,7 @@ instance Latex Decl where
 instance Latex Pattern where
   latex PAny = "\\_"
   latex (PVar x) = x
+  latex (PCons ":" [p1,p2]) = latex p1 ++ ":" ++ latex p2
   latex (PCons n ps) = n ++ " " ++ intercalate " " (map latex ps)
 
 

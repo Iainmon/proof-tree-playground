@@ -6,7 +6,6 @@ module Server.Service where
 import Data.Aeson.Types
 
 import Text.Latex
-import qualified Parser
 import Data.Text.Lazy hiding (map)
 import Logic.Proof
 import Web.Scotty
@@ -33,6 +32,13 @@ instance FromJSON ParseRequest where
   parseJSON (Object v) = ParseRequest <$> v .: "source"
   parseJSON _ = fail "Expected an object"
 
+
+handle e = do
+  status status500
+  liftIO $ putStrLn ("error message: " ++ show (e :: SomeException))
+  json $ object ["error" .= pack (show e)]
+
+
 parseService :: ScottyM ()
 parseService = post "/parse" $ catch action handle
   where action = do
@@ -55,8 +61,4 @@ parseService = post "/parse" $ catch action handle
           let tr = Display.pt' e -- pt' (Parser.parse e)
           -- liftIO $ print tr
           json $ fmap latex tr
-        handle e = do
-          status status500
-          liftIO $ putStrLn ("error message: " ++ show (e :: SomeException))
-          json $ object ["error" .= pack (show e)]
 

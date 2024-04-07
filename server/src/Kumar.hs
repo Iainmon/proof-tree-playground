@@ -32,6 +32,7 @@ newtype K.UIdent = K.UIdent ((Int, Int), String)
 
 data K.Decl
   = K.DSimp K.LIdent K.Expr
+  | K.DSimpFun K.LIdent [K.LIdent] K.Expr
   | K.DRec K.LIdent K.LIdent K.Expr
   | K.DType K.UIdent [K.ConDef]
 
@@ -66,6 +67,31 @@ data Expr
   | EApp Expr Expr
   | EBinOp Expr BinOp Expr
   deriving (Show, Eq)
+
+type Subst = Name -> Maybe Expr
+
+bind :: Subst -> Name -> Expr -> Subst
+bind s x e y | x == y = Just e
+             | otherwise = s y
+
+capture :: Name -> Subst -> Subst
+capture x s y | x == y = Nothing
+              | otherwise = s y
+
+subst :: Subst -> Expr -> Expr
+subst s (EVar x) | Just e <- s x = e
+                 | otherwise     = EVar x
+subst s (EInt n) = EInt n
+subst s (ECon x) = ECon x
+subst s (EList es) = EList (map (subst s) es)
+subst s (EBinFn bo) = EBinFn bo
+subst s (EFun x e) = EFun x (subst (capture x s) e)
+subst s (ELet d e) = ELet d (subst (foldr capture s (declVars d)) e)
+subst s (ERec ds e) = ERec ds (subst (foldr capture s (concatMap declVars ds)) e)
+subst s (ECase e as) = ECase (subst s e) [(p,subst (foldr capture s (patternVars p)) e) | (p,e) <- as]
+subst s (EIf e1 e2 e3) = EIf (subst s e1) (subst s e2) (subst s e3)
+subst s (EApp e1 e2) = EApp (subst s e1) (subst s e2)
+subst s (EBinOp e1 bo e2) = EBinOp (subst s e1) bo (subst s e2)
 
 
 pattern BuiltInOp :: BinOp
@@ -135,6 +161,10 @@ data Decl
   | DType Name [ConDef]
   deriving (Show, Eq)
 
+declVars :: Decl -> [Name]
+declVars (DSimp x e) = [x]
+declVars (DRec f x e) = [f,x]
+
 type CaseAlt = (Pattern, Expr)
 
 data Pattern
@@ -142,6 +172,11 @@ data Pattern
   | PAny
   | PCons Name [Pattern]
   deriving (Show, Eq)
+
+patternVars :: Pattern -> [Name]
+patternVars (PVar x) = [x]
+patternVars PAny = []
+patternVars (PCons _ ps) = concatMap patternVars ps
 
 type Env = [(Name, Value)]
 
@@ -165,6 +200,21 @@ boolValue v = conValue v >>= readMaybe
 pattern VBool :: Bool -> Value
 pattern VBool b <- (boolValue -> Just b) where
   VBool b = VCon (show b) []
+
+listValue :: Value -> Maybe [Value]
+listValue (VCon "[]" []) = Just []
+listValue (VCon ":" [v1,v2]) = (v1:) <$> listValue v2
+
+
+embedEnv :: Env -> Expr -> Expr
+embedEnv env = subst (\x -> lookup x env >>= embedValue)
+
+embedValue :: Value -> Maybe Expr
+embedValue (VClosure {}) = Nothing
+embedValue v | Just n <- numValue v = Just (EInt n)
+embedValue v | Just vs <- listValue v >>= mapM embedValue = Just (EList vs)
+embedValue (VCon n vs) | Just es <- mapM embedValue vs = Just (foldl EApp (ECon n) es)
+embedValue _ = Nothing
 
 
 showListValue :: Value -> String
@@ -218,6 +268,7 @@ transExpr (K.EList xs) = EList (map transExpr xs)
 transExpr (K.EBinFn bo) = EBinFn (transBinOp bo)
 transExpr (K.EFun x e) = EFun (transLIdent x) (transExpr e)
 transExpr (K.ELet [d@(K.DSimp x e1)] e2) = ELet (transDecl d) (transExpr e2)
+transExpr (K.ELet [d@(K.DSimpFun _ _ _)] e2) = ELet (transDecl d) (transExpr e2)
 transExpr (K.ELet d e) = ERec (map transDecl d) (transExpr e)
 transExpr (K.ECase e as) = ECase (transExpr e) (map transCaseAlt as)
 transExpr (K.EIf e1 e2 e3) = EIf (transExpr e1) (transExpr e2) (transExpr e3)
@@ -231,6 +282,7 @@ transExpr (K.EBinOp4 e1 (K.BinOp4P (_,bo)) e2) = EBinOp (transExpr e1) bo (trans
 
 transDecl :: K.Decl -> Decl
 transDecl (K.DSimp x e) = DSimp (transLIdent x) (transExpr e)
+transDecl (K.DSimpFun x ys e) = DSimp (transLIdent x) $ foldl (flip EFun) (transExpr e) (map transLIdent (reverse ys))
 transDecl (K.DRec x [y] e) = DRec (transLIdent x) (transLIdent y) (transExpr e)
 transDecl (K.DRec x (y:ys) e) = DRec (transLIdent x) (transLIdent y) $ foldl (flip EFun) (transExpr e) (map transLIdent ys)
 transDecl (K.DType x cs) = DType (transUIdent x) (map transConDef cs)

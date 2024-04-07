@@ -62,6 +62,7 @@ separator Expr "," ;
 (:).             [LIdent] ::= LIdent [LIdent];
 
 DSimp.           Decl ::= LIdent "=" Expr ;
+DSimpFun.        Decl ::= LIdent [LIdent] "=" Expr ;
 DRec.            Decl ::= "rec" LIdent [LIdent] "=" Expr ;
 DType.           Decl ::= "data" UIdent "=" [ConDef] ;
 (:[]).           [Decl] ::= Decl;

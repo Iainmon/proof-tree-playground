@@ -6,9 +6,11 @@
 \usepackage{amssymb}
 \usepackage{amsfonts}
 \usepackage{latexsym}
-%\usepackage[a4paper, total={6in, 8in}]{geometry}
+\usepackage{framed}
 
-\usepackage[legalpaper,margin=1cm]{geometry}
+\usepackage[letterpaper]{geometry}
+
+%\usepackage[legalpaper,margin=1cm]{geometry}
 \usepackage[usenames,dvipsnames]{xcolor}
 
 \title{SimFL}
@@ -124,6 +126,7 @@ x\mapsto v &\defeq (x,v)\\
 \infer[\tsc{MatchCons}]{\matchj {C\ \hat{v}} {C\ \hat{p}} \sigma}{\forall i \leq n,\ \, \matchj{v_i}{p_i}{\sigma_i} && \bigcap_{j=1}^n \textsf{free}(p_j)=\varnothing && \sigma = \bigcup_{j=1}^n \sigma_j}	
 \end{gather*}
 
+
 \begin{align*}
 \textsf{free}(p)& \defeq\begin{cases}
 	\{x\} &\text{if $p=x\in \textsc{Var}$}\\
@@ -156,8 +159,8 @@ x\mapsto v &\defeq (x,v)\\
 \\[12pt]
 \infer[\tsc{BuiltInOp}]{\envj \rho {e_1 \binop e_2} {v_1\llbracket\bullet \rrbracket v_2}}{\envj \rho {e_1} {v_1} && \envj {\rho} {e_2} {v_2} && \textsf{builtin}\, \binop}\\[12pt]
 \infer[\tsc{BuiltInFun}]{\envj \rho {\texttt{($\binop$)}} {v}}{\envj \rho {\code{fun a \texttt{->} (fun b \texttt{->} a $\binop$ b)}} {v} && \textsf{builtin}\, \binop}\\[12pt]
-\infer[\tsc{List}_1]{\envj \rho {\code{[ ]}} {v}}{\code{[ ]}\looparrowright e && \envj \rho e v}\qquad 
-\infer[\tsc{List}_2]{\envj \rho {\code{[$e_1$,$\ldots$,$e_n$]}} {v}}{1 \leq n && \code{[$e_1$,$\ldots$,$e_n$]}\looparrowright e && \envj \rho e v}
+%\infer[\tsc{List}_1]{\envj \rho {\code{[ ]}} {v}}{\code{[ ]}\looparrowright e && \envj \rho e v}\qquad 
+%\infer[\tsc{List}_2]{\envj \rho {\code{[$e_1$,$\ldots$,$e_n$]}} {v}}{1 \leq n && \code{[$e_1$,$\ldots$,$e_n$]}\looparrowright e && \envj \rho e v}
 \end{gather*}
 
 
