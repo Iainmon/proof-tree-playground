@@ -32,9 +32,9 @@ executable server
         Parse.Kumar.Parser
         Parse.Kumar.Usage
         Kumar
-        Semantic
-        Operational
-        Display
+        Kumar.Semantic
+        Kumar.Operational
+        Kumar.Display
         Server.Service
         Infer
 
@@ -63,6 +63,7 @@ executable server
         -- src/Parse,
         -- src/Parse/LBNF
         -- src/Parse/Kumar,
-        src/Server
+        src/Server,
+        src/Kumar
 
     default-language: Haskell2010

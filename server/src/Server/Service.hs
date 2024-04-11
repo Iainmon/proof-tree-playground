@@ -9,9 +9,9 @@ import Text.Latex
 import Data.Text.Lazy hiding (map)
 import Logic.Proof
 import Web.Scotty
-import qualified Display
+import qualified Kumar.Display as Display
 import qualified Kumar as K
-import qualified Operational
+import qualified Kumar.Operational as Operational
 import qualified Parse.Kumar.Parser as KP
 
 import Network.HTTP.Types (status500)
