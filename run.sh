@@ -12,5 +12,6 @@ yarn run start-server;
 cd ..
 cd server
 yarn;
+rm -rf dist-newstyle
 # nohup yarn run run-server &
 nohup cabal run server &
