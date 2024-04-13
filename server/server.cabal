@@ -37,6 +37,7 @@ executable server
         Kumar.Display
         Server.Service
         Infer
+        Hoohui
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -54,7 +55,11 @@ executable server
         BNFC-meta,
         BNFC,
         template-haskell,
-        bergamot
+        bergamot,
+        containers,
+        mtl,
+        bytestring,
+        general-unification
     
     hs-source-dirs:   
         app,

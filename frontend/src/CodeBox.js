@@ -3,7 +3,7 @@ import { StreamLanguage } from '@codemirror/language';
 import { haskell } from './haskell_ext_lang.js';
 // import { haskell } from '@codemirror/legacy-modes/mode/haskell';
 
-export function CodeBox({ value, onChange }) {
+export function CodeBox({ value, onChange, language}) {
     return (
         <CodeMirror
             value={value}

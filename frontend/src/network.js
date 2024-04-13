@@ -25,19 +25,24 @@ function populateTree({ conclusion, premises }) {
     };
 }
 
-export async function getProofTree(source, url = 'localhost', port = 3000) {
-    const options = {
+export async function getProofTree(source, options, url = 'localhost', port = 3000) {
+    const endpoint = options && options.endpoint ? options.endpoint : '/parse';
+    const query = options && options.query ? options.query : undefined;
+    const requestOptions = {
         method: 'POST',
-        url: `${(() => window.location.protocol)()}//${window.location.hostname}${process.env.API_HOST_PATH}/parse`,
+        url: `${(() => window.location.protocol)()}//${window.location.hostname}${process.env.API_HOST_PATH}/${endpoint.replace(/^\/|\/$/g, '')}`,
         headers: {
             'Content-Type': 'application/json',
             // 'Access-Control-Allow-Origin': 'http://localhost:8080',
             // 'Access-Control-Allow-Origin': 'http://localhost:3000',
         },
-        data: {source: source}
+        data: {
+            source: source,
+            query: query
+        }
     };
     console.log(source);
-    const response = await axios.request(options);
+    const response = await axios.request(requestOptions);
     console.log(response.data);
     let tree = populateTree(response.data);
     tree.shown = true;

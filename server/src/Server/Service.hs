@@ -62,3 +62,16 @@ parseService = post "/parse" $ catch action handle
           -- liftIO $ print tr
           json $ fmap latex tr
 
+
+mkParseService' :: (Latex j, Explain j) => String -> (String -> j) -> (Proof j -> Proof j) -> ScottyM ()
+mkParseService' rt mkJ format = post (capture rt) $ catch action handle
+  where action = do
+          req <- jsonData :: ActionM ParseRequest
+          let e = source req
+          let j = mkJ e
+          let Just tr = prove j
+          json $ fmap latex (format tr)
+
+
+mkParseService :: (Latex j, Explain j) => String -> (String -> j) -> ScottyM ()
+mkParseService rt mkJ = mkParseService' rt mkJ id

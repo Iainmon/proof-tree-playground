@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
+import Dropdown from 'react-bootstrap/Dropdown';
 import { Container } from 'react-bootstrap';
 import Form from 'react-bootstrap/Form';
 
@@ -201,6 +202,13 @@ function Handler() {
 
     }, { passive: false });
 
+    const defaultSources = {
+        'SimFL': 'let x = Just 1 in let y = Nothing in case x of { Just z -> Just y ; Nothing -> 0 }',
+        'Hoohui': '[rule1] friends(iain,kassia) -: ;'
+    }
+
+    const [language, setLanguage] = useLocalStorage('language','SimFL');
+
     return (
         <>
             <div className="proof-tree" style={{
@@ -209,18 +217,44 @@ function Handler() {
                 <Node tree={tree} />
             </div>
             <div className="fixed-bottom">
-                <SourceInput handleNewTree={handleNewTree} />
+                <Dropdown>
+                    <Dropdown.Toggle variant="success" id="dropdown-basic">
+                        {language}
+                    </Dropdown.Toggle>
+
+                    <Dropdown.Menu>
+                        <Dropdown.Item onClick={() => setLanguage('SimFL')}>SimFL</Dropdown.Item>
+                        <Dropdown.Item onClick={() => setLanguage('Hoohui')}>Hoohui</Dropdown.Item>
+                    </Dropdown.Menu>
+                </Dropdown>
+
+                {language === 'SimFL' ? 
+                  (<SourceInput handleNewTree={handleNewTree} language={language} defaultSources={defaultSources} />)
+                    : null}
+                {language === 'Hoohui' ?
+                    (<SourceInput handleNewTree={handleNewTree} language={language} defaultSources={defaultSources} />)
+                        : null}
             </div>
         </>
     );
 }
 
-function SourceInput({ handleNewTree }) {
-    const [source, setSource] = useLocalStorage('expression','let x = Just 1 in let y = Nothing in case x of { Just z -> Just y ; Nothing -> 0 }');
+
+
+function SourceInput({ handleNewTree, language, defaultSources}) {
+
+    const [source, setSource] = useLocalStorage(language + '.expression',defaultSources[language]);
+    const [query, setQuery] = useLocalStorage('query','hello');
+
+    const [endpoint, setEndpoint] = useLocalStorage('endpoint','/parse');
     const [errorMessages, setErrorMessages] = useState('');
     async function handleClick() {
         try {
-            const tree = await getProofTree(source);
+            const options = {
+                endpoint: endpoint,
+                query: language === 'Hoohui' ? query : undefined
+            };
+            const tree = await getProofTree(source,options);
             handleNewTree(tree);
             setErrorMessages('');
         } catch (e) {
@@ -234,14 +268,22 @@ function SourceInput({ handleNewTree }) {
         // setSource(event.target.value);
     }
 
-
     return (
         <>
             <Alert variant="danger" show={errorMessages !== ''} onClose={() => setErrorMessages('')} dismissible>
                 {errorMessages}
             </Alert>
-            <CodeBox value={source} onChange={onChange} />
-            <Button variant="info" onClick={handleClick}>Submit</Button>
+            <CodeBox value={source} onChange={onChange} language={language} />
+            {language === 'Hoohui' ? 
+                (<>
+                    <br />
+                    <Form.Control type="text" value={query} onChange={e => setQuery(e.target.value)} />
+                </>)
+                : null}
+            <br />
+            <Form.Control type="text" value={endpoint} onChange={e => setEndpoint(e.target.value)} />
+            <Button variant="info" onClick={handleClick}>Prove {language}</Button>
+
         </>
     );
 }
