@@ -38,6 +38,9 @@ executable server
         Server.Service
         Infer
         Hoohui
+        Hoohui.Parser
+        Control.Monad.Effector
+        Control.Monad.Branch
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -69,6 +72,8 @@ executable server
         -- src/Parse/LBNF
         -- src/Parse/Kumar,
         src/Server,
-        src/Kumar
+        src/Kumar,
+        src/Hoohui,
+        src/Control/Monad
 
     default-language: Haskell2010

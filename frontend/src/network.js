@@ -27,7 +27,7 @@ function populateTree({ conclusion, premises }) {
 
 export async function getProofTree(source, options, url = 'localhost', port = 3000) {
     const endpoint = options && options.endpoint ? options.endpoint : '/parse';
-    const query = options && options.query ? options.query : undefined;
+    const query = options && options.query ? options.query : '';
     const requestOptions = {
         method: 'POST',
         url: `${(() => window.location.protocol)()}//${window.location.hostname}${process.env.API_HOST_PATH}/${endpoint.replace(/^\/|\/$/g, '')}`,

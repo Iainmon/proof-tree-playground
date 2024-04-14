@@ -13,10 +13,17 @@ import qualified Kumar.Display as Display
 import qualified Kumar as K
 import qualified Kumar.Operational as Operational
 import qualified Parse.Kumar.Parser as KP
+import qualified Hoohui
 
 import Network.HTTP.Types (status500)
 import Control.Exception (SomeException)
+import qualified Hoohui.Parser as Hoohui
 
+
+applicationServices 
+  = [ parseService
+    , hoohuiService
+    ]
 
 
 instance ToJSON (Proof String) where
@@ -26,10 +33,10 @@ instance ToJSON (Proof String) where
 -- jsonData :: FromJSON a => ActionM a
 -- captureParam :: Parsable a => Text -> ActionM a
 
-data ParseRequest = ParseRequest { source :: String } deriving Show
+data ParseRequest = ParseRequest { source :: String, query :: String } deriving Show
 
 instance FromJSON ParseRequest where
-  parseJSON (Object v) = ParseRequest <$> v .: "source"
+  parseJSON (Object v) = ParseRequest <$> v .: "source" <*> v .: "query"
   parseJSON _ = fail "Expected an object"
 
 
@@ -63,15 +70,29 @@ parseService = post "/parse" $ catch action handle
           json $ fmap latex tr
 
 
-mkParseService' :: (Latex j, Explain j) => String -> (String -> j) -> (Proof j -> Proof j) -> ScottyM ()
+mkParseService' :: (Latex j, Explain j, Show j) => String -> (ParseRequest -> j) -> (Proof j -> Proof j) -> ScottyM ()
 mkParseService' rt mkJ format = post (capture rt) $ catch action handle
   where action = do
           req <- jsonData :: ActionM ParseRequest
-          let e = source req
-          let j = mkJ e
+          () <- liftIO $ print req
+          let j = mkJ req
+          () <- liftIO $ print j
           let Just tr = prove j
+          () <- liftIO $ print tr
           json $ fmap latex (format tr)
 
 
-mkParseService :: (Latex j, Explain j) => String -> (String -> j) -> ScottyM ()
+mkParseService :: (Latex j, Explain j, Show j) => String -> (ParseRequest -> j) -> ScottyM ()
 mkParseService rt mkJ = mkParseService' rt mkJ id
+
+hoohuiService :: ScottyM ()
+-- hoohuiService = mkParseService "/hoohui" action
+--   where action (ParseRequest s q) = Hoohui.parseJudgement s q
+hoohuiService = post "/hoohui" $ catch action handle
+  where action = do
+          req <- jsonData :: ActionM ParseRequest
+          let j = Hoohui.parseJudgement (source req) (query req)
+          () <- liftIO $ print (Hoohui.parseRuleSystem (source req))
+          () <- liftIO $ print j
+          let tr = Hoohui.prove' j
+          json $ fmap latex tr

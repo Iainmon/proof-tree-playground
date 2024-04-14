@@ -7,7 +7,7 @@ import Web.Scotty
 import Network.Wai.Middleware.Cors
 import qualified Network.Wai as WAI
 
-import Server.Service (parseService)
+import Server.Service (applicationServices)
 
 
 
@@ -40,7 +40,7 @@ corsMW = cors (const $ Just corsPolicy)
 main :: IO ()
 main = scotty 3000 $ do
   middleware corsMW
-  parseService
+  sequence_ applicationServices
   get "/" $ html "Api working!"
   -- defaultHandler $ \e -> do
   --   status 500
