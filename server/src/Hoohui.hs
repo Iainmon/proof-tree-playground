@@ -24,12 +24,15 @@ parseJudgement :: String -> String -> BEntailJ
 parseJudgement source query = mkEntailJ (parseRuleSystem source) (parseTerm query) 
 
 instance Latex (Term Name) where
-  latex (Var v) = v
+  latex (Var v) = "\\mathcal{" ++ v ++ "}"
   latex (Term f []) = "\\texttt{" ++ f ++ "}"
-  latex (Term f ts) = "\\textsf{" ++ f ++ "}" ++ "(" ++ intercalate ", " (map latex ts) ++ ")"
+  latex (Term f ts) = "\\texttt{" ++ f ++ "}" ++ "(" ++ intercalate ", " (map latex ts) ++ ")"
 
 instance Latex (EntailJ Name) where
-  latex j = latex (goal j)
+  -- latex j = latex (goal j)
+  latex j = case goal j of
+    Term f ts -> "\\textsf{" ++ f ++ "}" ++ "(" ++ intercalate ", " (map latex ts) ++ ")"
+    _ -> latex (goal j)
 
 
 prove' (EntailJ rs g r s) = fmap (\(rn,j) -> mkEntailJ rs j) pf
