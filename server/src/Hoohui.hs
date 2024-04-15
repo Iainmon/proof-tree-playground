@@ -24,7 +24,7 @@ parseJudgement :: String -> String -> BEntailJ
 parseJudgement source query = mkEntailJ (parseRuleSystem source) (parseTerm query) 
 
 instance Latex (Term Name) where
-  latex (Var v) = "\\mathbf{" ++ v ++ "}"
+  latex (Var v) = v
   latex (Term f []) = "\\texttt{" ++ f ++ "}"
   latex (Term f ts) = "\\textsf{" ++ f ++ "}" ++ "(" ++ intercalate ", " (map latex ts) ++ ")"
 
@@ -80,7 +80,7 @@ prove rs t = do
 
 instantiate :: HRuleSystem -> HSubst -> HRuleSystem
 instantiate rs s = go rs (length freeVars)
-  where incrementFV n (Var v) = Var (v ++ show n)
+  where incrementFV n (Var v) = Var (v ++ "_{" ++ show n ++ "}")
         incrementFV n (Term f ts) = Term f (map (incrementFV n) ts)
         freeVars = Map.keys s
         go [] _ = []
