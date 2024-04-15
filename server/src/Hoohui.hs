@@ -25,15 +25,19 @@ parseJudgement source query = mkEntailJ (parseRuleSystem source) (parseTerm quer
 
 instance Latex (Term Name) where
   latex (Var v) = "\\mathcal{" ++ v ++ "}"
-  latex (Term f []) = "\\texttt{" ++ f ++ "}"
-  latex (Term f ts) = "\\texttt{" ++ f ++ "}" ++ "(" ++ intercalate ", " (map latex ts) ++ ")"
+  latex (Term f []) = "\\texttt{" ++ ru f ++ "}"
+  latex (Term f ts) = "\\texttt{" ++ ru f ++ "}" ++ "(" ++ intercalate ", " (map latex ts) ++ ")"
 
 instance Latex (EntailJ Name) where
   -- latex j = latex (goal j)
   latex j = case goal j of
-    Term f ts -> "\\textsf{" ++ f ++ "}" ++ "(" ++ intercalate ", " (map latex ts) ++ ")"
+    Term f ts -> "\\textsf{" ++ ru f ++ "}" ++ "(" ++ intercalate ", " (map latex ts) ++ ")"
     _ -> latex (goal j)
 
+ru :: String -> String
+ru [] = []
+ru ('_':cs) = "\\_" ++ ru cs
+ru (c:cs) = c : ru cs
 
 prove' (EntailJ rs g r s) = fmap (\(rn,j) -> mkEntailJ rs j) pf
   where pf = fst $ head $ flip run emptyS $ prove rs g
