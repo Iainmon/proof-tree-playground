@@ -26,7 +26,7 @@ parseJudgement source query = mkEntailJ (parseRuleSystem source) (parseTerm quer
 instance Latex (Term Name) where
   latex (Var v) = "\\mathcal{" ++ v ++ "}"
   latex (Term f []) = "\\texttt{" ++ ru f ++ "}"
-  latex (Term f ts) = "\\texttt{" ++ ru f ++ "}" ++ "(" ++ intercalate ", " (map latex ts) ++ ")"
+  latex (Term f ts) = "\\texttt{" ++ ru f ++ "(}" ++ "" ++ intercalate ", " (map latex ts) ++ "\\texttt{)}"
 
 instance Latex (EntailJ Name) where
   -- latex j = latex (goal j)
