@@ -7,3 +7,5 @@
 6. zoom out in viewer
 7. export final proof tree as tree pattern
 
+8. Make sure proof generation is lazy. Doesn't seem to be. 
+

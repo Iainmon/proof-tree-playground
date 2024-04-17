@@ -3,7 +3,7 @@
 module Hoohui where
 
 
-import Logic.Unification.Basic hiding (empty)
+import Logic.Unification.Basic hiding (empty,ppTerm)
 import qualified Logic.Unification.Basic as U
 
 import Logic.Proof hiding (prove',prove,proofs)
@@ -38,6 +38,13 @@ ru :: String -> String
 ru [] = []
 ru ('_':cs) = "\\_" ++ ru cs
 ru (c:cs) = c : ru cs
+
+ppTerm :: Term Name -> String
+ppTerm (Var v) = "{" ++ v ++ "}"
+ppTerm (Term f []) = f
+ppTerm (Term f ts) = f ++ "(" ++ intercalate ", " (map ppTerm ts) ++ ")"
+
+
 
 prove' (EntailJ rs g r s) = fmap (\(rn,j) -> mkEntailJ rs j) pf
   where pf = fst $ head $ flip run emptyS $ prove rs g
@@ -94,16 +101,41 @@ instantiate rs s = go rs (length freeVars)
         go (r:rs) n = r {conclusionR = incrementFV n (conclusionR r), premisesR = map (incrementFV n) (premisesR r)} : go rs (n+1)
 
 
-rs = [
-      Rule {nameR = "rule1", conclusionR = Term "friends" [Term "iain" [],Term "kassia" []], premisesR = []}
-      ,Rule {nameR = "rule2", conclusionR = Term "friends" [Term "kassia" [],Term "grace" []], premisesR = []}
-      ,Rule {nameR = "rule3", conclusionR = Term "friends" [Term "grace" [],Term "ron" []], premisesR = []}
-      ,Rule {nameR = "rule4", conclusionR = Term "friends" [Var "X",Var "Y"], premisesR = [Term "friends" [Var "X",Var "Z"],Term "friends" [Var "Z",Var "Y"]]}
-      -- Rule {nameR = "rule5", conclusionR = Term "hasFriends" [Var "X"], premisesR = [Term "friends" [Var "X",Var "Y"]]}
-    ]
+-- rs = [
+--       Rule {nameR = "rule1", conclusionR = Term "friends" [Term "iain" [],Term "kassia" []], premisesR = []}
+--       ,Rule {nameR = "rule2", conclusionR = Term "friends" [Term "kassia" [],Term "grace" []], premisesR = []}
+--       ,Rule {nameR = "rule3", conclusionR = Term "friends" [Term "grace" [],Term "ron" []], premisesR = []}
+--       ,Rule {nameR = "rule4", conclusionR = Term "friends" [Var "X",Var "Y"], premisesR = [Term "friends" [Var "X",Var "Z"],Term "friends" [Var "Z",Var "Y"]]}
+--       -- Rule {nameR = "rule5", conclusionR = Term "hasFriends" [Var "X"], premisesR = [Term "friends" [Var "X",Var "Y"]]}
+--     ]
 
-t = parseTerm "friends(iain,ron)"
+-- t = parseTerm "friends(iain,ron)"
 emptyS = U.empty
 
-proofs = flip run emptyS . prove rs
+-- proofs = flip run emptyS . prove rs
+
+
+data HJ = HJ RuleName HTerm
+
+instance Show HJ where
+  show (HJ rn t) = "[" ++ rn ++ "]" ++ " :- " ++ ppTerm t
+
+fmtHProof :: HProof -> Proof HJ
+fmtHProof = fmap (\(rn,t) -> HJ rn t)
+
+ppHProof :: HProof -> IO ()
+ppHProof = print . fmtHProof
+
+
+rs = parseRuleSystem $ unlines 
+      [ "[less_than_nec]   less_than(Z,S(Z)) -: ;"
+      , "[less_than_base]  less_than(S({N}),S({M})) -: less_than({N},{M});"
+      , "[less_than_trans] less_than({N},{M}) -: less_than({N},{K}), less_than({K},{M}) ;"
+      ]
+
+qProofS :: Branch HSubst HProof
+qProofS = prove rs $ parseTerm "less_than(Z,{K})" -- (parseTerm "less_than(S(Z),S(S(S(Z))))")
+
+qProofs = fmap fst $ flip run emptyS qProofS
+
 

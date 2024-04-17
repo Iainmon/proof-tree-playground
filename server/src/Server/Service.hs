@@ -6,7 +6,7 @@ module Server.Service where
 import Data.Aeson.Types
 
 import Text.Latex
-import Data.Text.Lazy hiding (map)
+import Data.Text.Lazy hiding (map,lines)
 import Logic.Proof
 import Web.Scotty
 import qualified Kumar.Display as Display
@@ -14,6 +14,7 @@ import qualified Kumar as K
 import qualified Kumar.Operational as Operational
 import qualified Parse.Kumar.Parser as KP
 import qualified Hoohui
+import qualified Hoohui.Parser
 
 import Network.HTTP.Types (status500)
 import Control.Exception (SomeException)
@@ -91,8 +92,15 @@ hoohuiService :: ScottyM ()
 hoohuiService = post "/hoohui" $ catch action handle
   where action = do
           req <- jsonData :: ActionM ParseRequest
+          
+          let q = Hoohui.Parser.parseTerm (query req)
+          () <- liftIO $ putStrLn $ Hoohui.ppTerm q
+          () <- liftIO $ print q
+
+          let rss = Hoohui.Parser.parseRuleSystem (source req)
+          () <- liftIO $ mapM_ putStrLn $ lines (source req)
+
           let j = Hoohui.parseJudgement (source req) (query req)
-          () <- liftIO $ print (Hoohui.parseRuleSystem (source req))
-          () <- liftIO $ print j
+          -- () <- liftIO $ print (Hoohui.parseRuleSystem (source req))
           let tr = Hoohui.prove' j
           json $ fmap latex tr
