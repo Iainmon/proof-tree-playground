@@ -41,6 +41,7 @@ executable server
         Hoohui.Parser
         Control.Monad.Effector
         Control.Monad.Branch
+        Playground
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -61,6 +62,7 @@ executable server
         bergamot,
         containers,
         mtl,
+        transformers,
         bytestring,
         general-unification
     

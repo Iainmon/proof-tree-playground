@@ -14,6 +14,7 @@ import Data.List (intercalate)
 import Hoohui.Parser (parseTerm, parseRuleSystem)
 
 import Control.Monad.Branch
+import Control.Monad.State
 import Control.Applicative ( Alternative((<|>), empty) )
 import Control.Monad (guard)
 import qualified Data.Map as Map
@@ -134,8 +135,35 @@ rs = parseRuleSystem $ unlines
       ]
 
 qProofS :: Branch HSubst HProof
-qProofS = prove rs $ parseTerm "less_than(Z,{K})" -- (parseTerm "less_than(S(Z),S(S(S(Z))))")
+qProofS = prove rs (parseTerm "less_than(S(Z),S(S(S(Z))))")
+
+-- qProofS = prove rs $ parseTerm "less_than(Z,{K})" -- (parseTerm "less_than(S(Z),S(S(S(Z))))")
 
 qProofs = fmap fst $ flip run emptyS qProofS
 
+
+-- data RT a b = Root a [RT b b]
+
+
+myProofs :: HRuleSystem -> HTerm -> Branch HSubst HProof
+myProofs rs t = do
+  let rules = [r | r@(Rule _ c _) <- rs, Just _ <- [safeUnify t c]]
+  rule <- lift rules
+  let rn = nameR rule
+  let c = conclusionR rule
+  let s' = unifyOne t c
+  let group = map (apply s') (premisesR rule)
+  pfs <- sequence (map (myProofs rs) group)
+  s'' <- get
+  put (s' <.> s'')
+  s <- get
+  return $ Proof (rn,(t <. s)) pfs
+
+
+qmProofs e = map fmtHProof $ fmap fst $ flip run emptyS (myProofs rs (parseTerm e))
+  where rs = parseRuleSystem $ unlines 
+            [ "[less_than_nec]   less_than(Z,S(Z)) -: ;"
+            , "[less_than_base]  less_than(S({N}),S({M})) -: less_than({N},{M});"
+            , "[less_than_trans] less_than({N},{M}) -: less_than({N},{K}), less_than({K},{M}) ;"
+            ]
 
