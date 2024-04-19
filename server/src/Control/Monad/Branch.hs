@@ -193,8 +193,6 @@ gets f = get >>= pure . f
 each :: [a] -> Branch s a
 each as = Branch $ \s -> map (,s) as
 
-
-
 -- lift' ms = BranchT $ \s -> ListT $ Identity $ (map (,s)) ms
 lift' :: [a] -> Branch s a
 lift' x = Branch $ \s -> map (,s) x

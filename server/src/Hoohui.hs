@@ -144,18 +144,23 @@ qProofs = fmap fst $ flip run emptyS qProofS
 
 -- data RT a b = Root a [RT b b]
 
+instantiateB :: HRuleSystem -> Branch HSubst HRuleSystem
+instantiateB rs = do
+  s <- get
+  return $ instantiate rs s
 
 myProofs :: HRuleSystem -> HTerm -> Branch HSubst HProof
 myProofs rs t = do
-  let rules = [r | r@(Rule _ c _) <- rs, Just _ <- [safeUnify t c]]
-  rule <- lift' rules
+  rs' <- instantiateB rs
+  let rules = [r | r@(Rule _ c _) <- rs', Just _ <- [safeUnify t c]]
+  rule <- each rules
   let rn = nameR rule
   let c = conclusionR rule
   let s' = unifyOne t c
   let group = map (apply s') (premisesR rule)
   pfs <- sequence (map (myProofs rs) group)
   s'' <- get
-  put (s' <.> s'')
+  put (s'' <.> s')
   s <- get
   return $ Proof (rn,(t <. s)) pfs
 
