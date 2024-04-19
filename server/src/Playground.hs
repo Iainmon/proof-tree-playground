@@ -5,8 +5,8 @@ module Playground where
 
 import Control.Monad.Branch
 
-import Control.Monad.Trans.State
-import Control.Monad.Trans.Class
+import Control.Monad.State
+import Control.Monad.Trans
 
 import Control.Applicative ( Alternative(empty, (<|>)) )
 
@@ -17,9 +17,10 @@ import Logic.Proof (
   Explain(..),
   proofs,
   premises)
+import Data.List (transpose)
 
 run :: Int -> Branch Int a -> [(a,Int)]
-run = flip runStateT
+run = flip runBranch
 
 increment :: Branch Int Int
 increment = do
@@ -42,7 +43,7 @@ parallel (f:fs) = do
   return a <|> parallel fs
 
 concurrent :: (s -> a -> [(b,s)]) -> Branch s a -> Branch s b
-concurrent f b = branch $ \s -> do (a,s') <- runStateT b s; f s' a
+concurrent f b = branch $ \s -> do (a,s') <- runBranch b s; f s' a
 
 
 
@@ -64,7 +65,7 @@ sandboxMany (b:bs) = do
 awaitAll :: Branch s a -> Branch s [(a,s)]
 awaitAll b = do
   s0 <- get
-  return $ runStateT b s0
+  return $ runBranch b s0
 
 -- awaitMany :: [Branch s a] -> Branch s [(a,s)]
 -- awaitMany [] = return []
@@ -101,7 +102,7 @@ proofsBr f j =
     [] -> empty
     fj -> do
       -- j' <- save (concat fj)
-      ps <- lift fj -- mapM (proofsBr f) j'
+      ps <- liftBr fj -- mapM (proofsBr f) j'
       case ps of
         [] -> return (Leaf j)
         _ -> do
@@ -119,7 +120,30 @@ pr1 n | n `mod` 2 == 0 = [[n+1]]
       | otherwise = [[n+1], [n+2,n+2]]
 
 
-prfs = map fst $ runStateT (proofsBr pr1 0) 0
+prfs = map fst $ runBranch (proofsBr pr1 0) 0
 
 nat 0 = "Z"
 nat n = "S(" ++ nat (n-1) ++ ")"
+
+inc :: Branch Int Int
+inc = do
+  s <- get
+  put (s+1)
+  return s
+
+natsFromB :: Int -> Branch Int [Int]
+natsFromB i = do
+  return [i..]
+
+syncCounts :: [Int] -> [Int]
+syncCounts xs = concat $ transpose [[x..] | x <- xs]
+
+syncCountsB :: [Int] -> Branch Int [Int]
+syncCountsB xs = liftBr xs >>= \x -> return [x..]
+
+runBInt :: Branch Int a -> [a]
+runBInt = map fst . flip runBranch 0
+
+nextTenFromB :: Int -> Branch Int Int
+-- nextTenFromB n = lift [n..n+9]
+nextTenFromB n = lift' [n..n+9]

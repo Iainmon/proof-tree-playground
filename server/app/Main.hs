@@ -3,7 +3,7 @@
 module Main where
 -- import Data.Text.Lazy
 
-import Web.Scotty
+import Web.Scotty hiding (put)
 import Network.Wai.Middleware.Cors
 import qualified Network.Wai as WAI
 

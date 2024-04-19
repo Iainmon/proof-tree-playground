@@ -148,7 +148,7 @@ qProofs = fmap fst $ flip run emptyS qProofS
 myProofs :: HRuleSystem -> HTerm -> Branch HSubst HProof
 myProofs rs t = do
   let rules = [r | r@(Rule _ c _) <- rs, Just _ <- [safeUnify t c]]
-  rule <- lift rules
+  rule <- lift' rules
   let rn = nameR rule
   let c = conclusionR rule
   let s' = unifyOne t c
