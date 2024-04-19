@@ -48,7 +48,7 @@ ppTerm (Term f ts) = f ++ "(" ++ intercalate ", " (map ppTerm ts) ++ ")"
 
 
 prove' (EntailJ rs g r s) = fmap (\(rn,j) -> mkEntailJ rs j) pf
-  where pf = fst $ head $ flip run emptyS $ prove rs g
+  where pf = fst $ head $ flip run emptyS $ myProofs rs g -- prove rs g
 
 type HTerm = Term Name
 type HSubst = Subst Name
@@ -150,9 +150,11 @@ instantiateB rs = do
   return $ instantiate rs s
 
 myProofs :: HRuleSystem -> HTerm -> Branch HSubst HProof
-myProofs rs t = do
+myProofs rs t' = do
+  t <- get >>= return . (t' <.)
   rs' <- instantiateB rs
-  let rules = [r | r@(Rule _ c _) <- rs', Just _ <- [safeUnify t c]]
+  let rules = [r | r@(Rule _ c _) <- rs', Just s <- [safeUnify t c]]
+  guard $ not (null rules)
   rule <- each rules
   let rn = nameR rule
   let c = conclusionR rule
@@ -160,7 +162,7 @@ myProofs rs t = do
   let group = map (apply s') (premisesR rule)
   pfs <- sequence (map (myProofs rs) group)
   s'' <- get
-  put (s'' <.> s')
+  put (s' <.> s'')
   s <- get
   return $ Proof (rn,(t <. s)) pfs
 
