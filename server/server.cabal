@@ -21,9 +21,12 @@ maintainer:         moncrief@oregonstate.edu
 -- category:
 extra-source-files: CHANGELOG.md
 
-ghc-options: -fth -ddump-deriv
 
 executable server
+    ghc-options: 
+        -fth
+        -ddump-deriv
+
     main-is:          Main.hs
 
 
