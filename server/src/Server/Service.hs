@@ -102,5 +102,8 @@ hoohuiService = post "/hoohui" $ catch action handle
 
           let j = Hoohui.parseJudgement (source req) (query req)
           -- () <- liftIO $ print (Hoohui.parseRuleSystem (source req))
-          let tr = Hoohui.prove' j
+          -- let tr = Hoohui.prove' j
+          -- let tr = Hoohui.provePM' j
+          tr <- liftIO $ Hoohui.proveIO j
+
           json $ fmap latex tr

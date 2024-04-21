@@ -52,6 +52,18 @@ ppTerm (Term f ts) = f ++ "(" ++ intercalate ", " (map ppTerm ts) ++ ")"
 prove' (EntailJ rs g r s) = fmap (\(rn,j) -> mkEntailJ rs j) pf
   where pf = fst $ head $ flip run emptyS $ myProofs rs g -- prove rs g
 
+provePM' (EntailJ rs g r s) = fmap (\(rn,j) -> mkEntailJ rs j) pf
+  where pf = fst $ head proofs
+        proofs = flip run emptyPS $ proofsPM rs g
+
+proveIO :: EntailJ Name -> IO (Proof (EntailJ Name))
+proveIO (EntailJ rs g r s) = do
+  let proofs = flip run emptyPS $ proofsPM rs g
+  let (pf,pst) = head proofs
+  print $ map fmtHJudgement $ Map.keys $ knowledgeBase pst
+  return $ fmap (\(rn,j) -> mkEntailJ rs j) pf
+
+
 type HTerm = Term Name
 type HSubst = Subst Name
 type HRule = Rule Name
@@ -93,6 +105,44 @@ newMetaVar n = do
   modify (\pst -> pst {metaVars = v : metaVars pst})
   return v
 
+newProof :: HJudgement -> HProof -> ProofMachine ()
+newProof j p = do
+  kb <- gets knowledgeBase
+  modify (\pst -> pst {knowledgeBase = Map.insert j p kb})
+
+instantiateRules :: HRuleSystem -> ProofMachine HRuleSystem
+instantiateRules r = gets substState >>= return . instantiate r
+
+checkMaxDepth :: Int -> ProofMachine ()
+checkMaxDepth d = do
+  i <- gets metaVarCount
+  guard $ i < d
+
+matchingRules :: HRuleSystem -> HTerm -> ProofMachine HRule
+matchingRules rs t = do
+  -- t <- gets substState >>= return . (t' <.)
+  rs' <- instantiateRules rs
+  let rules = [r | r@(Rule _ c _) <- rs', Just s <- [safeUnify t c]]
+  guard $ not (null rules)
+  each rules
+
+
+proofsPM :: HRuleSystem -> HTerm -> ProofMachine HProof
+proofsPM rs t' = do
+  t <- gets substState >>= return . (t' <.)
+  rule <- matchingRules rs t
+  let rn = nameR rule
+  let c = conclusionR rule
+  let s' = unifyOne t c
+  let group = map (apply s') (premisesR rule)
+  pfs <- sequence (map (proofsPM rs) group)
+  s'' <- gets substState
+  putSubst (s' <.> s'')
+  s <- gets substState
+  let j = (rn,(t <. s))
+  let proof = Proof j pfs
+  newProof j proof
+  return proof
 
 
 type ProofMachine a = Branch ProofState a
@@ -140,8 +190,11 @@ data HJ = HJ RuleName HTerm
 instance Show HJ where
   show (HJ rn t) = "[" ++ rn ++ "]" ++ " :- " ++ ppTerm t
 
+fmtHJudgement :: HJudgement -> HJ
+fmtHJudgement (rn,t) = HJ rn t
+
 fmtHProof :: HProof -> Proof HJ
-fmtHProof = fmap (\(rn,t) -> HJ rn t)
+fmtHProof = fmap fmtHJudgement
 
 ppHProof :: HProof -> IO ()
 ppHProof = print . fmtHProof
