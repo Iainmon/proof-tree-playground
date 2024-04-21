@@ -17,6 +17,8 @@ import Control.Monad.Branch
 import Control.Monad.State
 import Control.Applicative ( Alternative((<|>), empty) )
 import Control.Monad (guard)
+
+import Data.Map (Map)
 import qualified Data.Map as Map
 
 
@@ -56,11 +58,111 @@ type HRule = Rule Name
 type HRuleSystem = RuleSystem Name
 
 type RuleName = Name
+type HJudgement = (RuleName,HTerm)
+type HProof = Proof HJudgement
 
-type HProof = Proof (RuleName,HTerm)
+data ProofState = ProofState 
+  { substState :: HSubst
+  , metaVarCount :: Int
+  , metaVars :: [Name]
+  , knowledgeBase :: Map HJudgement HProof
+  } deriving (Show)
+
+emptyS :: Subst v
+emptyS = U.empty
+
+emptyPS :: ProofState
+emptyPS = ProofState emptyS 0 [] Map.empty
+
+putSubst :: HSubst -> ProofMachine ()
+putSubst s = modify (\pst -> pst {substState = s})
+
+getSubst :: ProofMachine HSubst
+getSubst = gets substState
+
+modifySubst :: (HSubst -> HSubst) -> ProofMachine ()
+modifySubst f = do
+  s <- gets substState
+  putSubst (f s)
+
+newMetaVar :: Name -> ProofMachine Name
+newMetaVar n = do
+  modify (\pst -> pst {metaVarCount = metaVarCount pst + 1})
+  i <- gets metaVarCount
+  let v = n ++ "_{" ++ show i ++ "}"
+  modify (\pst -> pst {metaVars = v : metaVars pst})
+  return v
 
 
 
+type ProofMachine a = Branch ProofState a
+
+
+
+
+
+instantiate :: HRuleSystem -> HSubst -> HRuleSystem
+instantiate rs s = go rs (length freeVars)
+  where incrementFV n (Var v) = Var (v ++ "_{" ++ show n ++ "}")
+        incrementFV n (Term f ts) = Term f (map (incrementFV n) ts)
+        freeVars = Map.keys s
+        go [] _ = []
+        go (r:rs) n = r {conclusionR = incrementFV n (conclusionR r), premisesR = map (incrementFV n) (premisesR r)} : go rs (n+1)
+
+
+
+instantiateB :: HRuleSystem -> Branch HSubst HRuleSystem
+instantiateB rs = do
+  s <- get
+  return $ instantiate rs s
+
+myProofs :: HRuleSystem -> HTerm -> Branch HSubst HProof
+myProofs rs t' = do
+  t <- get >>= return . (t' <.)
+  rs' <- instantiateB rs
+  let rules = [r | r@(Rule _ c _) <- rs', Just s <- [safeUnify t c]]
+  guard $ not (null rules)
+  rule <- each rules
+  let rn = nameR rule
+  let c = conclusionR rule
+  let s' = unifyOne t c
+  let group = map (apply s') (premisesR rule)
+  pfs <- sequence (map (myProofs rs) group)
+  s'' <- get
+  put (s' <.> s'')
+  s <- get
+  return $ Proof (rn,(t <. s)) pfs
+
+
+
+data HJ = HJ RuleName HTerm
+
+instance Show HJ where
+  show (HJ rn t) = "[" ++ rn ++ "]" ++ " :- " ++ ppTerm t
+
+fmtHProof :: HProof -> Proof HJ
+fmtHProof = fmap (\(rn,t) -> HJ rn t)
+
+ppHProof :: HProof -> IO ()
+ppHProof = print . fmtHProof
+
+
+rs = parseRuleSystem $ unlines 
+      [ "[less_than_nec]   less_than(Z,S(Z)) -: ;"
+      , "[less_than_base]  less_than(S({N}),S({M})) -: less_than({N},{M});"
+      , "[less_than_trans] less_than({N},{M}) -: less_than({N},{K}), less_than({K},{M}) ;"
+      ]
+
+
+qmProofs e = map fmtHProof $ fmap fst $ flip run emptyS (myProofs rs (parseTerm e))
+  where rs = parseRuleSystem $ unlines 
+            [ "[less_than_nec]   less_than(Z,S(Z)) -: ;"
+            , "[less_than_base]  less_than(S({N}),S({M})) -: less_than({N},{M});"
+            , "[less_than_trans] less_than({N},{M}) -: less_than({N},{K}), less_than({K},{M}) ;"
+            ]
+
+
+{-
 provePremises :: HRuleSystem -> [(RuleName,HTerm,[HTerm],HSubst)] -> Branch HSubst (RuleName,HTerm,[HProof])
 provePremises rs [] = empty
 provePremises rs ((rn,c,g,s):gs) = (do {
@@ -92,15 +194,7 @@ prove rs t = do
   -- return $ Node (rn,t) pfs
     
   -- -- where applicableGroups = undefined
-
-instantiate :: HRuleSystem -> HSubst -> HRuleSystem
-instantiate rs s = go rs (length freeVars)
-  where incrementFV n (Var v) = Var (v ++ "_{" ++ show n ++ "}")
-        incrementFV n (Term f ts) = Term f (map (incrementFV n) ts)
-        freeVars = Map.keys s
-        go [] _ = []
-        go (r:rs) n = r {conclusionR = incrementFV n (conclusionR r), premisesR = map (incrementFV n) (premisesR r)} : go rs (n+1)
-
+-}
 
 -- rs = [
 --       Rule {nameR = "rule1", conclusionR = Term "friends" [Term "iain" [],Term "kassia" []], premisesR = []}
@@ -111,66 +205,15 @@ instantiate rs s = go rs (length freeVars)
 --     ]
 
 -- t = parseTerm "friends(iain,ron)"
-emptyS = U.empty
 
--- proofs = flip run emptyS . prove rs
-
-
-data HJ = HJ RuleName HTerm
-
-instance Show HJ where
-  show (HJ rn t) = "[" ++ rn ++ "]" ++ " :- " ++ ppTerm t
-
-fmtHProof :: HProof -> Proof HJ
-fmtHProof = fmap (\(rn,t) -> HJ rn t)
-
-ppHProof :: HProof -> IO ()
-ppHProof = print . fmtHProof
-
-
-rs = parseRuleSystem $ unlines 
-      [ "[less_than_nec]   less_than(Z,S(Z)) -: ;"
-      , "[less_than_base]  less_than(S({N}),S({M})) -: less_than({N},{M});"
-      , "[less_than_trans] less_than({N},{M}) -: less_than({N},{K}), less_than({K},{M}) ;"
-      ]
-
+{-
 qProofS :: Branch HSubst HProof
 qProofS = prove rs (parseTerm "less_than(S(Z),S(S(S(Z))))")
 
 -- qProofS = prove rs $ parseTerm "less_than(Z,{K})" -- (parseTerm "less_than(S(Z),S(S(S(Z))))")
 
 qProofs = fmap fst $ flip run emptyS qProofS
-
+-}
 
 -- data RT a b = Root a [RT b b]
-
-instantiateB :: HRuleSystem -> Branch HSubst HRuleSystem
-instantiateB rs = do
-  s <- get
-  return $ instantiate rs s
-
-myProofs :: HRuleSystem -> HTerm -> Branch HSubst HProof
-myProofs rs t' = do
-  t <- get >>= return . (t' <.)
-  rs' <- instantiateB rs
-  let rules = [r | r@(Rule _ c _) <- rs', Just s <- [safeUnify t c]]
-  guard $ not (null rules)
-  rule <- each rules
-  let rn = nameR rule
-  let c = conclusionR rule
-  let s' = unifyOne t c
-  let group = map (apply s') (premisesR rule)
-  pfs <- sequence (map (myProofs rs) group)
-  s'' <- get
-  put (s' <.> s'')
-  s <- get
-  return $ Proof (rn,(t <. s)) pfs
-
-
-qmProofs e = map fmtHProof $ fmap fst $ flip run emptyS (myProofs rs (parseTerm e))
-  where rs = parseRuleSystem $ unlines 
-            [ "[less_than_nec]   less_than(Z,S(Z)) -: ;"
-            , "[less_than_base]  less_than(S({N}),S({M})) -: less_than({N},{M});"
-            , "[less_than_trans] less_than({N},{M}) -: less_than({N},{K}), less_than({K},{M}) ;"
-            ]
-
+-- proofs = flip run emptyS . prove rs

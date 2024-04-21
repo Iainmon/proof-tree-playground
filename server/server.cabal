@@ -26,6 +26,7 @@ executable server
     ghc-options: 
         -fth
         -ddump-deriv
+        
 
     main-is:          Main.hs
 

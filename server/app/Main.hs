@@ -3,7 +3,8 @@
 module Main where
 -- import Data.Text.Lazy
 
-import Web.Scotty hiding (put)
+import Web.Scotty (html, middleware, scotty)
+import qualified Web.Scotty as Scotty
 import Network.Wai.Middleware.Cors
 import qualified Network.Wai as WAI
 
@@ -41,7 +42,7 @@ main :: IO ()
 main = scotty 3000 $ do
   middleware corsMW
   sequence_ applicationServices
-  get "/" $ html "Api working!"
+  Scotty.get "/" $ html "Api working!"
   -- defaultHandler $ \e -> do
   --   status 500
   --   json $ object ["error" .= pack (show e)]

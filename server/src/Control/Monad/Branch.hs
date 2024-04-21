@@ -175,8 +175,16 @@ save f = branch $ \s -> [(a,s) | a <- f s]
 eff :: (s -> (a,s)) -> Branch s a
 eff f = branch (pure . f)
 
-modify :: (s -> s) -> Branch s ()
-modify f = branch (\s -> [((),f s)])
+-- modify :: (s -> s) -> Branch s ()
+-- modify f = branch (\s -> [((),f s)])
+
+global :: (s -> s) -> Branch s ()
+global f = branch (\s -> [((),f s)])
+
+terminate :: Branch s a
+-- terminate = empty
+terminate = branch (const [])
+
 
 -- get :: Branch s s
 -- get = Branch (\s -> [(s,s)])
@@ -184,12 +192,12 @@ modify f = branch (\s -> [((),f s)])
 -- put :: s -> Branch s ()
 -- put s = Branch (\_ -> [((),s)])
 
-gets :: (s -> a) -> Branch s a
-gets f = get >>= pure . f
+-- gets :: (s -> a) -> Branch s a
+-- gets f = get >>= pure . f
 
 -- class Transpose t where
 --   transpose :: t [a] -> [t a]
-
+f = 1
 each :: [a] -> Branch s a
 each as = Branch $ \s -> map (,s) as
 
