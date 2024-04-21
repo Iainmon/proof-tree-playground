@@ -26,8 +26,16 @@ import qualified Data.Map as Map
 parseJudgement :: String -> String -> BEntailJ
 parseJudgement source query = mkEntailJ (parseRuleSystem source) (parseTerm query) 
 
+latexNumber :: Term Name -> Maybe Int
+latexNumber (Term "S" [t]) = do
+  n <- latexNumber t
+  return (n + 1)
+latexNumber (Term "Z" []) = Just 0
+latexNumber _ = Nothing
+
 instance Latex (Term Name) where
   latex (Var v) = "\\mathcal{" ++ v ++ "}"
+  latex t | Just s <- latexNumber t = "\\texttt{" ++ show s ++ "}"
   latex (Term f []) = "\\texttt{" ++ ru f ++ "}"
   latex (Term f ts) = "\\texttt{" ++ ru f ++ "(}" ++ "" ++ intercalate ", " (map latex ts) ++ "\\texttt{)}"
 
@@ -60,7 +68,9 @@ proveIO :: EntailJ Name -> IO (Proof (EntailJ Name))
 proveIO (EntailJ rs g r s) = do
   let proofs = flip run emptyPS $ proofsPM rs g
   let (pf,pst) = head proofs
-  print $ map fmtHJudgement $ Map.keys $ knowledgeBase pst
+  -- print $ map (fmtHJudgement . conclusion) $ Map.elems $ knowledgeBase pst
+  print $ Map.size $ knowledgeBase pst
+  print $ metaVarCount pst
   return $ fmap (\(rn,j) -> mkEntailJ rs j) pf
 
 
@@ -77,7 +87,7 @@ data ProofState = ProofState
   { substState :: HSubst
   , metaVarCount :: Int
   , metaVars :: [Name]
-  , knowledgeBase :: Map HJudgement HProof
+  , knowledgeBase :: Map HTerm HProof
   } deriving (Show)
 
 emptyS :: Subst v
@@ -105,13 +115,19 @@ newMetaVar n = do
   modify (\pst -> pst {metaVars = v : metaVars pst})
   return v
 
-newProof :: HJudgement -> HProof -> ProofMachine ()
-newProof j p = do
+incMetaVar :: ProofMachine Int
+incMetaVar = do
+  n <- gets metaVarCount
+  modify (\pst -> pst {metaVarCount = n + 1})
+  gets metaVarCount
+
+newProof :: HTerm -> HProof -> ProofMachine ()
+newProof t p = do
   kb <- gets knowledgeBase
-  modify (\pst -> pst {knowledgeBase = Map.insert j p kb})
+  modify (\pst -> pst {knowledgeBase = Map.insert t p kb})
 
 instantiateRules :: HRuleSystem -> ProofMachine HRuleSystem
-instantiateRules r = gets substState >>= return . instantiate r
+instantiateRules = instantiatePM-- = gets substState >>= return . instantiate r
 
 checkMaxDepth :: Int -> ProofMachine ()
 checkMaxDepth d = do
@@ -135,20 +151,37 @@ proofsPM rs t' = do
   let c = conclusionR rule
   let s' = unifyOne t c
   let group = map (apply s') (premisesR rule)
-  pfs <- sequence (map (proofsPM rs) group)
+  pfs <- sequence (map (proofsPMCached rs) group)
   s'' <- gets substState
-  putSubst (s' <.> s'')
+  putSubst (s'' <.> s')
   s <- gets substState
-  let j = (rn,(t <. s))
+  let j = (rn,t <. s)
   let proof = Proof j pfs
-  newProof j proof
+  newProof (snd j) proof
   return proof
 
+proofsPMCached :: HRuleSystem -> HTerm -> ProofMachine HProof
+proofsPMCached rs t' = do
+  checkMaxDepth 1000000
+  t <- gets substState >>= return . (t' <.)
+  kb <- gets (Map.lookup t . knowledgeBase)
+  case kb of
+    Just p -> return p
+    Nothing -> proofsPM rs t
 
 type ProofMachine a = Branch ProofState a
 
 
 
+instantiatePM :: HRuleSystem -> ProofMachine HRuleSystem
+instantiatePM [] = return []
+instantiatePM (r:rs) = do
+  n <- incMetaVar
+  let r' = r {conclusionR = incrementFV n (conclusionR r), premisesR = map (incrementFV n) (premisesR r)}
+  rs' <- instantiatePM rs
+  return (r':rs')
+  where incrementFV n (Var v) = Var (v ++ "_{" ++ show n ++ "}")
+        incrementFV n (Term f ts) = Term f (map (incrementFV n) ts)
 
 
 instantiate :: HRuleSystem -> HSubst -> HRuleSystem
