@@ -6,7 +6,7 @@ module Server.Service where
 import Data.Aeson.Types
 
 import Text.Latex
-import Data.Text.Lazy hiding (map,lines)
+import Data.Text hiding (map,lines)
 import Logic.Proof
 import Web.Scotty
 import qualified Kumar.Display as Display
@@ -20,6 +20,9 @@ import Network.HTTP.Types (status500)
 import Control.Exception (SomeException)
 import qualified Hoohui.Parser as Hoohui
 
+
+import System.IO.Unsafe (unsafePerformIO)
+import System.Mem (performGC)
 
 applicationServices 
   = [ parseService
@@ -89,7 +92,9 @@ mkParseService rt mkJ = mkParseService' rt mkJ id
 hoohuiService :: ScottyM ()
 -- hoohuiService = mkParseService "/hoohui" action
 --   where action (ParseRequest s q) = Hoohui.parseJudgement s q
-hoohuiService = post "/hoohui" $ catch action handle
+hoohuiService = post "/hoohui" $ do
+    catch action handle
+    scottyClean
   where action = do
           req <- jsonData :: ActionM ParseRequest
           
@@ -104,6 +109,18 @@ hoohuiService = post "/hoohui" $ catch action handle
           -- () <- liftIO $ print (Hoohui.parseRuleSystem (source req))
           -- let tr = Hoohui.prove' j
           -- let tr = Hoohui.provePM' j
-          tr <- liftIO $ Hoohui.proveIO j
+          let action = (Hoohui.proveIO j >>= \tr -> performGC >> return tr)
+          let tr = unsafePerformIO action
+          -- tr <- liftIO $ 
 
           json $ fmap latex tr
+          liftIO performGC
+          unsafePerformIO performGC
+            `seq` unsafePerformIO (putStrLn "garbage collected") 
+            `seq` return ()
+
+
+scottyClean = do
+  unsafePerformIO performGC
+    `seq` unsafePerformIO (putStrLn "garbage collected") 
+    `seq` return ()

@@ -18,8 +18,10 @@ import Control.Monad.State
 import Control.Applicative ( Alternative((<|>), empty) )
 import Control.Monad (guard)
 
-import Data.Map (Map)
-import qualified Data.Map as Map
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
+
+import System.Mem (performGC)
 
 
 freeVars :: Term v -> [v]
@@ -80,21 +82,29 @@ provePM' (EntailJ rs g r s) = fmap (\(rn,_,j) -> mkEntailJ rs j) pf
   where pf = fst $ head proofs
         proofs = flip run emptyPS $ proofsPM rs g
 
-proveIO :: EntailJ Name -> IO (Proof FMTJ)
-proveIO j@(EntailJ rs g r s) = do
-  let proofs = flip run emptyPS $ proofsPM rs g
-  if null proofs 
-    then do
-      return $ Leaf ("*",g,Term "no proof found" []) -- Leaf (j { goal = Term "no proof found" [] })
-    else do
-      let (pf,pst) = head proofs
-      -- print $ map (fmtHJudgement . conclusion) $ Map.elems $ knowledgeBase pst
-      print $ Map.size $ knowledgeBase pst
-      print $ metaVarCount pst
-      print $ depthCounter pst
-      let fv = freeVars g
-      return $ fmap (\(rn,j,j') -> (rn,if any (`elem`fv) (freeVars j) then j else j',j')) pf-- fmap (\(rn,j) -> mkEntailJ rs j) pf
+maybeHead (x:_) = Just x
+maybeHead _ = Nothing
 
+
+proveIO :: EntailJ Name -> IO (Proof FMTJ)
+proveIO j@(EntailJ rs g r s)
+  = let proofs = flip run emptyPS $ proofsPM rs g in
+      case maybeHead proofs of
+        Just (pf,pst) -> do
+          performGC
+          -- let (pf,pst) = proofs
+          -- print $ map (fmtHJudgement . conclusion) $ Map.elems $ knowledgeBase pst
+          print $ Map.size $ knowledgeBase pst
+          print $ metaVarCount pst
+          print $ depthCounter pst
+          let fv = freeVars g
+          let formattedProof = fmap (\(rn,j,j') -> (rn,if any (`elem`fv) (freeVars j) then j else j',j')) pf
+          performGC
+          return formattedProof -- fmap (\(rn,j) -> mkEntailJ rs j) pf
+        _ -> do
+          return $ Leaf ("*",g,Term "no proof found" []) -- Leaf (j { goal = Term "no proof found" [] })
+
+test s = proveIO (mkEntailJ rs (parseTerm s))
 
 type HTerm = Term Name
 type HSubst = Subst Name
@@ -148,6 +158,7 @@ incDepth :: ProofMachine ()
 incDepth = modify (\pst -> pst {depthCounter = depthCounter pst + 1})
 
 newProof :: HTerm -> HProof -> ProofMachine ()
+newProof t _ | not (null (freeVars t)) = return ()
 newProof t p = do
   kb <- gets knowledgeBase
   modify (\pst -> pst {knowledgeBase = Map.insert t p kb})
@@ -190,7 +201,7 @@ proofsPM rs t' = do
 
 proofsPMCached :: HRuleSystem -> HTerm -> ProofMachine HProof
 proofsPMCached rs t' = do
-  checkMaxDepth 1000000 -- 1000000
+  checkMaxDepth 100000 -- 1000000
   t <- gets substState >>= return . (t' <.)
   kb <- gets (Map.lookup t . knowledgeBase)
   case kb of
@@ -262,8 +273,8 @@ ppHProof = print . fmtHProof
 
 
 rs = parseRuleSystem $ unlines 
-      [ "[less_than_nec]   less_than(Z,S(Z)) -: ;"
-      , "[less_than_base]  less_than(S({N}),S({M})) -: less_than({N},{M});"
+      [ "[less_than_nec]   less_than(0,1) -: ;"
+      , "[less_than_base]  less_than(succ({N}),succ({M})) -: less_than({N},{M});"
       , "[less_than_trans] less_than({N},{M}) -: less_than({N},{K}), less_than({K},{M}) ;"
       ]
 

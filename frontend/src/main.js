@@ -277,7 +277,7 @@ function SourceInput({ handleNewTree, language, defaultSources}) {
             {language === 'Hoohui' ? 
                 (<>
                     <br />
-                    <Form.Control type="text" value={query} onChange={e => setQuery(e.target.value)} />
+                    <Form.Control type="text" value={query} onChange={e => setQuery(e.target.value)} style={{fontFamily: 'monospace'}}/>
                 </>)
                 : null}
             <br />

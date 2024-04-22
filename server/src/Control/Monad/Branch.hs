@@ -16,7 +16,7 @@ import Control.Applicative ( Alternative(empty, (<|>)), liftA2 )
 import Data.List (transpose)
 import Data.Monoid (Ap(..))
 import Data.Functor.Identity (Identity(..))
-
+import Control.Monad (MonadPlus(..))
 -- newtype State s a = State (s -> (a,s))
 -- state :: Monad m => (s -> (a,s)) -> StateT s m a
 -- state :: (Monad m, MonadState s m) => (s -> (a,s)) -> m a
