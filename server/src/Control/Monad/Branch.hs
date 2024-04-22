@@ -197,7 +197,7 @@ terminate = branch (const [])
 
 -- class Transpose t where
 --   transpose :: t [a] -> [t a]
-f = 1
+
 each :: [a] -> Branch s a
 each as = Branch $ \s -> map (,s) as
 

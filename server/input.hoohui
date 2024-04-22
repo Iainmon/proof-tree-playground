@@ -1,0 +1,39 @@
+[rule1] friends(iain,kassia) -: ;
+[rule2] friends(kassia,grace) -: ;
+[rule3] friends(grace,ron) -: ;
+[rule4] friends(ron,kelli) -: ;
+[rule5] friends({X},{Y}) -: friends({X},{Z}), friends({Z},{Y});
+[rule6] friends({X},{Y}) -: friends({Y},{X});
+
+[ax1] lt(z,s({N})) -: ;
+[ax2] lt(s({M}),s({N})) -: lt({M},{N});
+
+[add_zero] add(z,{M},{M}) -: ;
+[add_succ_1] add(s({N}),{M},s({K})) -: add({N},{M},{K}) ;
+[add_succ_1] add({N},s({M}),s({K})) -: add({N},{M},{K}) ;
+
+
+[less_than_nec]   less_than(zero,succ(zero)) -: ;
+[less_than_base]  less_than(succ({N}),succ({M})) -: less_than({N},{M});
+[less_than_trans] less_than({N},{M}) -: less_than({N},{K}), less_than({K},{M}) ;
+
+[plus_z_l] plus(zero,{N},{N}) -: ;
+[plus_z_r] plus({N},zero,{N}) -: ;
+[plus_succ_l] plus(succ({N}),{M},succ({K})) -: plus({N},{M},{K}) ;
+[plus_succ_r] plus({N},succ({M}),succ({K})) -: plus({N},{M},{K}) ;
+
+[pred_z] pred(zero,zero) -: ;
+[pred_succ] pred(succ({N}),{N}) -: ;
+
+[minus_z_r] minus(zero,{N},zero) -: ;
+[minus_z_l] minus({N},zero,{N}) -: ;
+[minus_z_succ] minus(succ({N}),succ({M}),{K}) -: minus({N},{M},{K});
+
+[fib_1] fib(succ(zero),succ(zero)) -: ;
+[fib_1] fib(succ(succ(zero)),succ(zero)) -: ;
+[fib_s] fib({N},{M}) 
+  -: minus({N},succ(succ(zero)),{N2})
+  ,  minus({N},succ(zero),{N1})
+  ,  fib({N2},{K})
+  ,  fib({N1},{L})
+  ,  plus({K},{L},{M});

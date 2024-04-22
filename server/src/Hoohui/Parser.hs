@@ -46,6 +46,15 @@ termVarParser = Var <$> braces nameParser
 --   spaces
 --   return (Var n)
 
+termNumLitParser :: Parser BTerm
+termNumLitParser = do
+  n <- lexeme (read <$> many1 digit)
+  lexeme $ notFollowedBy (char '(')
+  return (consNum n)
+  where consNum 0 = Term "zero" []
+        consNum n = Term "succ" [consNum (n-1)]
+
+
 termLitParser :: Parser BTerm
 termLitParser = do
   f <- lexeme nameParser
@@ -61,6 +70,7 @@ termTermParser = do
 termParser :: Parser BTerm
 termParser = spaces *> ((try termVarParser <?> "var term")
                     <|> (try termTermParser <?> "term")
+                    <|> (try termNumLitParser <?> "number")
                     <|> (try termLitParser <?> "literal")) <* spaces
 
 

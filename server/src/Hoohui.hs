@@ -22,15 +22,19 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 
 
+freeVars :: Term v -> [v]
+freeVars (Var v) = [v]
+freeVars (Term _ ts) = concatMap freeVars ts
+
 
 parseJudgement :: String -> String -> BEntailJ
 parseJudgement source query = mkEntailJ (parseRuleSystem source) (parseTerm query) 
 
 latexNumber :: Term Name -> Maybe Int
-latexNumber (Term "S" [t]) = do
+latexNumber (Term f [t]) | f == "S" || f == "succ" = do
   n <- latexNumber t
   return (n + 1)
-latexNumber (Term "Z" []) = Just 0
+latexNumber (Term f []) | f == "Z" || f == "zero" = Just 0
 latexNumber _ = Nothing
 
 instance Latex (Term Name) where
@@ -42,6 +46,7 @@ instance Latex (Term Name) where
 instance Latex (EntailJ Name) where
   -- latex j = latex (goal j)
   latex j = case goal j of
+    Term f [] -> "\\textsf{" ++ ru f ++ "}"
     Term f ts -> "\\textsf{" ++ ru f ++ "}" ++ "(" ++ intercalate ", " (map latex ts) ++ ")"
     _ -> latex (goal j)
 
@@ -57,21 +62,38 @@ ppTerm (Term f ts) = f ++ "(" ++ intercalate ", " (map ppTerm ts) ++ ")"
 
 
 
-prove' (EntailJ rs g r s) = fmap (\(rn,j) -> mkEntailJ rs j) pf
+type FMTJ = (RuleName,HTerm,HTerm)
+
+instance Latex FMTJ where
+  latex (rn,t1,t2) = case freeVars t1 of 
+    [] -> latexRN rn ++ latexJ t2
+    _  -> latexRN rn ++ latexJ t1 ++ " \\sim " ++ latexJ t2
+    where latexJ (Term f []) = "\\texttt{" ++ ru f ++ "}"
+          latexJ (Term f ts) = "\\texttt{" ++ ru f ++ "}" ++ "(" ++ intercalate ", " (map latex ts) ++ ")"
+          latexJ j = latex j
+          latexRN rn = "\\vdash_{" ++ "\\texttt{" ++ ru rn ++ "}}" -- "[\\texttt{[" ++ ru rn ++ "}] \\vdash "
+
+prove' (EntailJ rs g r s) = fmap (\(rn,_,j) -> mkEntailJ rs j) pf
   where pf = fst $ head $ flip run emptyS $ myProofs rs g -- prove rs g
 
-provePM' (EntailJ rs g r s) = fmap (\(rn,j) -> mkEntailJ rs j) pf
+provePM' (EntailJ rs g r s) = fmap (\(rn,_,j) -> mkEntailJ rs j) pf
   where pf = fst $ head proofs
         proofs = flip run emptyPS $ proofsPM rs g
 
-proveIO :: EntailJ Name -> IO (Proof (EntailJ Name))
-proveIO (EntailJ rs g r s) = do
+proveIO :: EntailJ Name -> IO (Proof FMTJ)
+proveIO j@(EntailJ rs g r s) = do
   let proofs = flip run emptyPS $ proofsPM rs g
-  let (pf,pst) = head proofs
-  -- print $ map (fmtHJudgement . conclusion) $ Map.elems $ knowledgeBase pst
-  print $ Map.size $ knowledgeBase pst
-  print $ metaVarCount pst
-  return $ fmap (\(rn,j) -> mkEntailJ rs j) pf
+  if null proofs 
+    then do
+      return $ Leaf ("*",g,Term "no proof found" []) -- Leaf (j { goal = Term "no proof found" [] })
+    else do
+      let (pf,pst) = head proofs
+      -- print $ map (fmtHJudgement . conclusion) $ Map.elems $ knowledgeBase pst
+      print $ Map.size $ knowledgeBase pst
+      print $ metaVarCount pst
+      print $ depthCounter pst
+      let fv = freeVars g
+      return $ fmap (\(rn,j,j') -> (rn,if any (`elem`fv) (freeVars j) then j else j',j')) pf-- fmap (\(rn,j) -> mkEntailJ rs j) pf
 
 
 type HTerm = Term Name
@@ -80,7 +102,7 @@ type HRule = Rule Name
 type HRuleSystem = RuleSystem Name
 
 type RuleName = Name
-type HJudgement = (RuleName,HTerm)
+type HJudgement = (RuleName,HTerm,HTerm)
 type HProof = Proof HJudgement
 
 data ProofState = ProofState 
@@ -88,13 +110,14 @@ data ProofState = ProofState
   , metaVarCount :: Int
   , metaVars :: [Name]
   , knowledgeBase :: Map HTerm HProof
+  , depthCounter :: Int
   } deriving (Show)
 
 emptyS :: Subst v
 emptyS = U.empty
 
 emptyPS :: ProofState
-emptyPS = ProofState emptyS 0 [] Map.empty
+emptyPS = ProofState emptyS 0 [] Map.empty 0
 
 putSubst :: HSubst -> ProofMachine ()
 putSubst s = modify (\pst -> pst {substState = s})
@@ -121,6 +144,9 @@ incMetaVar = do
   modify (\pst -> pst {metaVarCount = n + 1})
   gets metaVarCount
 
+incDepth :: ProofMachine ()
+incDepth = modify (\pst -> pst {depthCounter = depthCounter pst + 1})
+
 newProof :: HTerm -> HProof -> ProofMachine ()
 newProof t p = do
   kb <- gets knowledgeBase
@@ -131,12 +157,14 @@ instantiateRules = instantiatePM-- = gets substState >>= return . instantiate r
 
 checkMaxDepth :: Int -> ProofMachine ()
 checkMaxDepth d = do
-  i <- gets metaVarCount
+  i <- gets depthCounter
+  -- i <- gets metaVarCount
   guard $ i < d
 
 matchingRules :: HRuleSystem -> HTerm -> ProofMachine HRule
 matchingRules rs t = do
   -- t <- gets substState >>= return . (t' <.)
+  incDepth
   rs' <- instantiateRules rs
   let rules = [r | r@(Rule _ c _) <- rs', Just s <- [safeUnify t c]]
   guard $ not (null rules)
@@ -149,20 +177,20 @@ proofsPM rs t' = do
   rule <- matchingRules rs t
   let rn = nameR rule
   let c = conclusionR rule
-  let s' = unifyOne t c
+  let s' = unifyOne c t
   let group = map (apply s') (premisesR rule)
   pfs <- sequence (map (proofsPMCached rs) group)
   s'' <- gets substState
   putSubst (s'' <.> s')
   s <- gets substState
-  let j = (rn,t <. s)
+  let j = (rn,t,t <. s)
   let proof = Proof j pfs
-  newProof (snd j) proof
+  newProof (t <. s) proof
   return proof
 
 proofsPMCached :: HRuleSystem -> HTerm -> ProofMachine HProof
 proofsPMCached rs t' = do
-  checkMaxDepth 1000000
+  checkMaxDepth 1000000 -- 1000000
   t <- gets substState >>= return . (t' <.)
   kb <- gets (Map.lookup t . knowledgeBase)
   case kb of
@@ -214,7 +242,7 @@ myProofs rs t' = do
   s'' <- get
   put (s' <.> s'')
   s <- get
-  return $ Proof (rn,(t <. s)) pfs
+  return $ Proof (rn,t,(t <. s)) pfs
 
 
 
@@ -224,7 +252,7 @@ instance Show HJ where
   show (HJ rn t) = "[" ++ rn ++ "]" ++ " :- " ++ ppTerm t
 
 fmtHJudgement :: HJudgement -> HJ
-fmtHJudgement (rn,t) = HJ rn t
+fmtHJudgement (rn,_,t) = HJ rn t
 
 fmtHProof :: HProof -> Proof HJ
 fmtHProof = fmap fmtHJudgement
