@@ -24,6 +24,9 @@ import qualified Hoohui.Parser as Hoohui
 import System.IO.Unsafe (unsafePerformIO)
 import System.Mem (performGC)
 
+import System.Timeout (timeout)
+
+
 applicationServices 
   = [ parseService
     , hoohuiService
@@ -109,15 +112,15 @@ hoohuiService = post "/hoohui" $ do
           -- () <- liftIO $ print (Hoohui.parseRuleSystem (source req))
           -- let tr = Hoohui.prove' j
           -- let tr = Hoohui.provePM' j
-          let action = (Hoohui.proveIO j >>= \tr -> performGC >> return tr)
-          let tr = unsafePerformIO action
+          let Just tr = unsafePerformIO (timeout 12000000 (Hoohui.proveIO j >>= \tr -> performGC >> return tr))
           -- tr <- liftIO $ 
 
           json $ fmap latex tr
-          liftIO performGC
-          unsafePerformIO performGC
+          -- liftIO performGC
+          () <- unsafePerformIO performGC
             `seq` unsafePerformIO (putStrLn "garbage collected") 
             `seq` return ()
+          return ()
 
 
 scottyClean = do
