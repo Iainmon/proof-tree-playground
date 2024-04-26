@@ -101,7 +101,7 @@ hoohuiService = post "/hoohui" $ do
   where action = do
           req <- jsonData :: ActionM ParseRequest
           
-          let q = Hoohui.Parser.parseTerm (query req)
+          let q = Hoohui.Parser.parseTerm' (source req) (query req)
           () <- liftIO $ putStrLn $ Hoohui.ppTerm q
           () <- liftIO $ print q
 
@@ -112,8 +112,11 @@ hoohuiService = post "/hoohui" $ do
           -- () <- liftIO $ print (Hoohui.parseRuleSystem (source req))
           -- let tr = Hoohui.prove' j
           -- let tr = Hoohui.provePM' j
-          let Just tr = unsafePerformIO (timeout 12000000 (Hoohui.proveIO j >>= \tr -> performGC >> return tr))
+          let Just tr = unsafePerformIO (timeout 12000000 (Hoohui.proveIO j (source req) (query req) >>= \tr -> performGC >> return tr))
           -- tr <- liftIO $ 
+          () <- liftIO $ putStrLn $ Hoohui.ppTerm q
+          () <- liftIO $ print q
+
 
           json $ fmap latex tr
           -- liftIO performGC

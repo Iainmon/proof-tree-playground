@@ -11,7 +11,7 @@ import Text.Latex
 
 import Data.List (intercalate)
 
-import Hoohui.Parser (parseTerm, parseRuleSystem)
+import Hoohui.Parser (parseTerm, parseTerm', parseRuleSystem, parseAll)
 
 import Control.Monad.Branch
 import Control.Monad.State
@@ -30,7 +30,7 @@ freeVars (Term _ ts) = concatMap freeVars ts
 
 
 parseJudgement :: String -> String -> BEntailJ
-parseJudgement source query = mkEntailJ (parseRuleSystem source) (parseTerm query) 
+parseJudgement source query = mkEntailJ (parseRuleSystem source) (parseTerm' source query) 
 
 latexNumber :: Term Name -> Maybe Int
 latexNumber (Term f [t]) | f == "S" || f == "succ" = do
@@ -86,8 +86,8 @@ maybeHead (x:_) = Just x
 maybeHead _ = Nothing
 
 
-proveIO :: EntailJ Name -> IO (Proof FMTJ)
-proveIO j@(EntailJ rs g r s)
+proveIO :: EntailJ Name -> String -> String -> IO (Proof FMTJ)
+proveIO j@(EntailJ rs g r s) src q
   = let proofs = flip run emptyPS $ proofsPM rs g in
       case maybeHead proofs of
         Just (pf,pst) -> do

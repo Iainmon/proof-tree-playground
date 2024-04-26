@@ -5,8 +5,9 @@ import Logic.Unification.Basic
 
 import Text.Parsec hiding (runP)
 import qualified Text.Parsec as P
+import Text.Parsec.Prim (setInput)
 -- import Text.Parsec.String (Parser)
-import Control.Monad (void)
+import Control.Monad (void,msum)
 
 data ParseState 
   = ParseState { mixFixSpecs :: [MixFixSpec] }
@@ -86,7 +87,7 @@ termTermParser = do
 mixFixTermParser :: Parser BTerm
 mixFixTermParser = do
   mfSpecs <- getState >>= return . mixFixSpecs
-  choice $ map (\mf -> (lexeme $ parseMixFixSpec mf)) mfSpecs
+  choice $ map (\mf -> try (lexeme $ parseMixFixSpec mf)) mfSpecs
 
 termParser :: Parser BTerm
 termParser = spaces *> ((try termVarParser <?> "var term")
@@ -132,7 +133,7 @@ state :: Parser String
 state = getParserState >>= return  . stateInput
 
 runP :: Parser a -> String -> a
-runP p s = case P.runP p emptyParseState "" s of
+runP p s = case P.runParser p emptyParseState "" s of
   Left err -> error $ show err -- ++ "\n\n" ++ (show $ runP (try (try (try p >> return ()) <|> getState)) s)
   Right a -> a
 
@@ -143,8 +144,23 @@ runP' p s = case P.runP p' emptyParseState "" s of
   where p' = do { a <- p; eof; return a }
 
 
+parseAll :: String -> String -> (RuleSystem Name, BTerm, ParseState)
+parseAll src trm = runP p ""
+  where p = do 
+          setInput src
+          rs <- rulesParser
+          setInput trm
+          t <- clauseParser
+          s <- getState
+          return (rs,t,s)
+
 parseTerm :: String -> BTerm
 parseTerm = runP termParser
+
+parseTerm' :: String -> String -> BTerm
+parseTerm' src t = let s = runP (rulesParser >> getState) src 
+                    in runP (do {putState s ; t' <- clauseParser; eof; return t'}) t
+                    -- in error $ show s -- runP (do {putState s ; t' <- clauseParser; eof; return t'}) t
 
 parseRule :: String -> BRule
 parseRule = runP ruleParser
@@ -194,13 +210,13 @@ mfVar = lexeme (braces nameParser)
 
 mixFixPatternPart :: Parser MixFixPatPart
 mixFixPatternPart = do
-  -- notFollowedBy (lexeme $ string ":-:")
+  notFollowedBy (lexeme $ string ":-:")
   (try (MFPVar <$> mfVar) <?> "mix fix variable")
     <|> (try (MFPSym <$> mfSymbol) <?> "mix fix symbol")
     <|> (try (MFPTxt <$> mfTextSymbol) <?> "mix fix text symbol")
 
 mixFixPattern :: Parser MixFixPattern
-mixFixPattern = many1 mixFixPatternPart
+mixFixPattern = many1 $ lexeme mixFixPatternPart
 
 mixFixSpec :: Parser MixFixSpec
 mixFixSpec = do
@@ -208,34 +224,35 @@ mixFixSpec = do
   p <- lexeme mixFixPattern
   symbol '`'
   lexeme $ string ":-:"
-  t <- lexeme termParser
+  t <- lexeme termTermParser
   lookAhead (symbol ';')
   let spec = MixFixSpec p t
-  modifyState (\s -> s { mixFixSpecs = spec : mixFixSpecs s })
+  modifyState (\s -> s { mixFixSpecs = mixFixSpecs s ++ [spec]})
   return $ spec
 
 
 parseMixFixPattern :: MixFixPattern -> Parser [(String,BTerm)]
 parseMixFixPattern [] = do
   -- lookAhead $ symbols "-:" <|> symbol ';'
-  -- notFollowedBy $ (void (lexeme nameParser)) <|> void (lexeme letter)
+  notFollowedBy $ (void (lexeme termParser)) <|> void (lexeme letter)
   return []
 parseMixFixPattern (p:ps) = do
   case p of
     MFPSym s -> do
-      symbols s
+      lexeme $ symbols s
       parseMixFixPattern ps
     MFPTxt s -> do
-      symbols s
+      lexeme $ symbols s
       parseMixFixPattern ps
     MFPVar v -> do
       t <- lexeme termParser
       ts <- parseMixFixPattern ps
+      -- notFollowedBy $ (void (lexeme termParser)) <|> void (lexeme letter)
       return $ (v,t):ts
 
 parseMixFixSpec :: MixFixSpec -> Parser BTerm
 parseMixFixSpec (MixFixSpec p t) = do
-  ps <- parseMixFixPattern p
+  ps <- lexeme $ parseMixFixPattern p
   return $ foldl (\t (s,t') -> subst s t' t) t ps
 
 
@@ -244,78 +261,14 @@ operator :: String -> Parser String
 operator s = lexeme $ string s
 
 
+checkSpec :: BTerm -> MixFixSpec -> Maybe (MixFixPattern, Subst Name)
+checkSpec t spec@(MixFixSpec p t') = do
+  s <- safeUnify t' t
+  return (p,s)
 
-symbolP :: Parser String
-symbolP = lexeme $ many1 (oneOf allowedSymbols)
-
-
-symbolsPP :: Parser (String,Parser String)
-symbolsPP = do
-  -- notFollowedBy (lexeme $ string "-:")
-  s <- lexeme $ symbolP
-  return $ (s,symbols s >> return s)
-
-mixfixVarPP :: Parser (String,Parser BTerm)
-mixfixVarPP = do
-  -- notFollowedBy (lexeme $ string "-:")
-  s <- lexeme nameParser
-  return $ (s,lexeme termParser)
-
-alternate :: Parser a -> Parser a -> Parser [a]
-alternate p1 p2 = do
-  a <- try (Left <$> p1) <|> (Right <$> p2)
-  case a of
-    Left a -> do
-      as <- alternate p1 p2
-      return (a:as)
-    Right a -> do
-      as <- alternate p2 p1
-      return (a:as)
-
-compilePatternPP :: Parser (Parser [(String,Either String BTerm)])
-compilePatternPP = do
-  ps <- many1 $ try (mapP mixfixVarPP Right) <|> (mapP symbolsPP Left)
-  return $ sequence $ map (\(s,p) -> p >>= \t -> return (s,t)) ps
-    where mapP p f = p >>= \(s,p') -> return (s,p' >>= return . f)
-          varPP = mapP mixfixVarPP Right
-          symPP = mapP symbolsPP Left
-          -- scan = do
-          --   try scan1 <|> (do {symp <- symPP; ps <- scan1 ; return (symp:ps)})
-          -- scan1 = do
-          --   varp <- varPP
-          --   ps <- scan
-          --   return (symp:varp:ps)
-mixfixPatternPP :: Parser (Parser [(String,BTerm)])
-mixfixPatternPP = do
-  p <- lexeme $ compilePatternPP
-  eof
-  return $ do
-    mps <- p
-    eof
-    return [(s,t) | (s,Right t) <- mps]
-
--- mixfixParser :: Parser (Parser BTerm)
--- mixfixParser = do
---   -- lexeme $ char '['
---   p <- lexeme mixfixPatternPP
---   -- lexeme $ char ']'
---   lexeme $ string ":-:"
---   t <- lexeme termParser
---   lookAhead (symbol ';')
---   return $ do
---     mps <- lexeme p <?> "pattern"
---     return $ foldl (\t (s,t') -> subst s t' t) t mps
+toInfix :: BTerm -> [MixFixSpec] -> Maybe (MixFixPattern, Subst Name)
+toInfix t specs = msum $ map (checkSpec t) specs
 
 
--- p1 = do
---   x <- runP mixfixPatternPP "G |- E : T"
---   eof
---   return x
-
--- p2 = do
---   x <- runP mixfixParser "G |- E : T :-: type({G},{E},{T}) ;"
---   return x
-
--- p3 = runP mixFixSpec "G |- E : T :-: type({G},{E},{T}) ;"
 
 p1 = runP mixFixSpec "`{G} |- {E} => {V} has-type {T}` :-: type({G},{E},{T}) ;"
