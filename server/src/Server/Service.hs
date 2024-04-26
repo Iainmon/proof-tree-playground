@@ -27,6 +27,7 @@ import System.Mem (performGC)
 import System.Timeout (timeout)
 
 
+
 applicationServices 
   = [ parseService
     , hoohuiService
@@ -112,7 +113,7 @@ hoohuiService = post "/hoohui" $ do
           -- () <- liftIO $ print (Hoohui.parseRuleSystem (source req))
           -- let tr = Hoohui.prove' j
           -- let tr = Hoohui.provePM' j
-          let Just tr = unsafePerformIO (timeout 12000000 (Hoohui.proveIO j (source req) (query req) >>= \tr -> performGC >> return tr))
+          let Just tr = unsafePerformIO (timeout 12000000 (Hoohui.proveIO j (source req) (query req) >>= \tr -> tr `seq` return tr) >>= \tr -> performGC >> return tr)
           -- tr <- liftIO $ 
           () <- liftIO $ putStrLn $ Hoohui.ppTerm q
           () <- liftIO $ print q
@@ -123,6 +124,7 @@ hoohuiService = post "/hoohui" $ do
           () <- unsafePerformIO performGC
             `seq` unsafePerformIO (putStrLn "garbage collected") 
             `seq` return ()
+          () <- liftIO $ performGC >> putStrLn "garbage collected"
           return ()
 
 

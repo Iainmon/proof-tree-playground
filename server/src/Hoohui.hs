@@ -11,7 +11,16 @@ import Text.Latex
 
 import Data.List (intercalate)
 
-import Hoohui.Parser (parseTerm, parseTerm', parseRuleSystem, parseAll)
+import Hoohui.Parser 
+  ( parseTerm
+  , parseTerm'
+  , parseRuleSystem
+  , parseAll
+  , mixFixSpecs
+  , toInfix
+  , MixFixSpec(..)
+  , MixFixPattern
+  , MixFixPatPart(..))
 
 import Control.Monad.Branch
 import Control.Monad.State
@@ -22,7 +31,6 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 import System.Mem (performGC)
-
 
 freeVars :: Term v -> [v]
 freeVars (Var v) = [v]
@@ -64,16 +72,22 @@ ppTerm (Term f ts) = f ++ "(" ++ intercalate ", " (map ppTerm ts) ++ ")"
 
 
 
-type FMTJ = (RuleName,HTerm,HTerm)
+type FMTJ = (RuleName,HTerm,HTerm,[MixFixSpec])
 
 instance Latex FMTJ where
-  latex (rn,t1,t2) = case freeVars t1 of 
+  latex (rn,t1,t2,mfSpec) = case freeVars t1 of 
     [] -> latexRN rn ++ latexJ t2
     _  -> latexRN rn ++ latexJ t1 ++ " \\sim " ++ latexJ t2
-    where latexJ (Term f []) = "\\texttt{" ++ ru f ++ "}"
+    where latexJ t | Just (mfp,s) <- toInfix t mfSpec = intercalate "\\texttt{ }" $ map (latexInfix s) mfp
+          latexJ (Term f []) = "\\texttt{" ++ ru f ++ "}"
           latexJ (Term f ts) = "\\texttt{" ++ ru f ++ "}" ++ "(" ++ intercalate ", " (map latex ts) ++ ")"
           latexJ j = latex j
           latexRN rn = "\\vdash_{" ++ "\\texttt{" ++ ru rn ++ "}}" -- "[\\texttt{[" ++ ru rn ++ "}] \\vdash "
+          latexInfix _ (MFPSym s) = "\\texttt{" ++ ru s ++ "}"
+          latexInfix _ (MFPTxt t) = "\\texttt{" ++ ru t ++ "}"
+          latexInfix s (MFPVar v) | Just t <- Map.lookup v s = latex t
+
+
 
 prove' (EntailJ rs g r s) = fmap (\(rn,_,j) -> mkEntailJ rs j) pf
   where pf = fst $ head $ flip run emptyS $ myProofs rs g -- prove rs g
@@ -85,24 +99,25 @@ provePM' (EntailJ rs g r s) = fmap (\(rn,_,j) -> mkEntailJ rs j) pf
 maybeHead (x:_) = Just x
 maybeHead _ = Nothing
 
+maybeRunProofs rs g = let !x = maybeHead $ run (proofsPM rs g) emptyPS in x
 
 proveIO :: EntailJ Name -> String -> String -> IO (Proof FMTJ)
 proveIO j@(EntailJ rs g r s) src q
-  = let proofs = flip run emptyPS $ proofsPM rs g in
-      case maybeHead proofs of
-        Just (pf,pst) -> do
-          performGC
-          -- let (pf,pst) = proofs
-          -- print $ map (fmtHJudgement . conclusion) $ Map.elems $ knowledgeBase pst
-          print $ Map.size $ knowledgeBase pst
-          print $ metaVarCount pst
-          print $ depthCounter pst
-          let fv = freeVars g
-          let formattedProof = fmap (\(rn,j,j') -> (rn,if any (`elem`fv) (freeVars j) then j else j',j')) pf
-          performGC
-          return formattedProof -- fmap (\(rn,j) -> mkEntailJ rs j) pf
-        _ -> do
-          return $ Leaf ("*",g,Term "no proof found" []) -- Leaf (j { goal = Term "no proof found" [] })
+  = case maybeRunProofs rs g of
+      Just (pf,pst) -> do
+        performGC
+        -- let (pf,pst) = proofs
+        -- print $ map (fmtHJudgement . conclusion) $ Map.elems $ knowledgeBase pst
+        print $ Map.size $ knowledgeBase pst
+        print $ metaVarCount pst
+        print $ depthCounter pst
+        let fv = freeVars g
+        let formattedProof = fmap (\(rn,j,j') -> (rn,if any (`elem`fv) (freeVars j) then j else j',j',mfSpecs)) pf
+        performGC
+        return formattedProof -- fmap (\(rn,j) -> mkEntailJ rs j) pf
+      _ -> do
+        return $ Leaf ("*",g,Term "no proof found" [],[]) -- Leaf (j { goal = Term "no proof found" [] })
+  where mfSpecs = let (_,_,parseState) = parseAll src q in mixFixSpecs parseState
 
 test s = proveIO (mkEntailJ rs (parseTerm s))
 
@@ -177,7 +192,7 @@ matchingRules rs t = do
   -- t <- gets substState >>= return . (t' <.)
   incDepth
   rs' <- instantiateRules rs
-  let rules = [r | r@(Rule _ c _) <- rs', Just s <- [safeUnify t c]]
+  let !rules = [r | r@(Rule _ c _) <- rs', Just s <- [safeUnify t c]]
   guard $ not (null rules)
   each rules
 
@@ -190,12 +205,12 @@ proofsPM rs t' = do
   let c = conclusionR rule
   let s' = unifyOne c t
   let group = map (apply s') (premisesR rule)
-  pfs <- sequence (map (proofsPMCached rs) group)
+  !pfs <- sequence (map (proofsPMCached rs) group)
   s'' <- gets substState
   putSubst (s'' <.> s')
   s <- gets substState
-  let j = (rn,t,t <. s)
-  let proof = Proof j pfs
+  let !j = (rn,t,t <. s)
+  let !proof = Proof j pfs
   newProof (t <. s) proof
   return proof
 
