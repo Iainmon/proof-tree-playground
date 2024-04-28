@@ -45,6 +45,8 @@ executable server
         Hoohui.Parser
         Control.Monad.Effector
         Control.Monad.Branch
+        Control.Monad.ListT
+        Control.Monad.ProofT
         Playground
 
     -- LANGUAGE extensions used by modules in this package.

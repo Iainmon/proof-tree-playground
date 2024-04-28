@@ -24,6 +24,9 @@ import Control.Monad (MonadPlus(..))
 
 -- data Branch s a = Branch (s -> [(a,s)])
 
+import Control.Monad.ListT
+
+{--
 interleave :: [[a]] -> [a]
 interleave = concat . transpose
 
@@ -83,7 +86,7 @@ instance MonadTrans ListT where
 instance MonadIO m => MonadIO (ListT m) where
   liftIO :: MonadIO m => IO a -> ListT m a
   liftIO = lift . liftIO
-
+--}
 
 -- instance Applicative m => Monoid (ListT m a) where
 --   mempty :: Applicative m => ListT m a
@@ -135,6 +138,9 @@ newtype Branch s a = Branch { runBranch :: s -> [(a,s)] }
           ,MonadPlus
           ,MonadState s)
           via (BranchT s Identity)
+
+
+-- newtype BranchT' s1 s2 m a = BranchT' { runBranchT' :: s2 -> s1 -> m ([(a,s2)],s1)}
 
 -- type Branch s a = BranchT s Identity a
 
