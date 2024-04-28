@@ -1,7 +1,14 @@
 import CodeMirror from '@uiw/react-codemirror';
 import { StreamLanguage } from '@codemirror/language';
 import { haskell } from './haskell_ext_lang.js';
+import { hoohui } from './hoohui_ext_lang.js';
+
 // import { haskell } from '@codemirror/legacy-modes/mode/haskell';
+
+const languages = {
+    'SimFL': StreamLanguage.define(haskell),
+    'Hoohui': StreamLanguage.define(hoohui),
+}
 
 export function CodeBox({ value, onChange, language}) {
     return (
@@ -9,8 +16,8 @@ export function CodeBox({ value, onChange, language}) {
             value={value}
             onChange={onChange}
             theme="dark"
-            height="200px"
-            extensions={[StreamLanguage.define(haskell)]}
+            height="320px"
+            extensions={[languages[language]]}
             // options={{
             //     theme: 'material',
             //     lineNumbers: true,

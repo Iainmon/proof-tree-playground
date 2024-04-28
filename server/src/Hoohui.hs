@@ -86,7 +86,7 @@ instance Latex FMTJ where
           latexInfix _ (MFPSym s) = "\\texttt{" ++ ru s ++ "}"
           latexInfix _ (MFPTxt t) = "\\texttt{" ++ ru t ++ "}"
           latexInfix s (MFPVar v) | Just t <- Map.lookup v s = latex t
-
+                                  | otherwise = "\\mathcal{" ++ v ++ "}"
 
 
 prove' (EntailJ rs g r s) = fmap (\(rn,_,j) -> mkEntailJ rs j) pf
@@ -114,6 +114,7 @@ proveIO j@(EntailJ rs g r s) src q
         let fv = freeVars g
         let formattedProof = fmap (\(rn,j,j') -> (rn,if any (`elem`fv) (freeVars j) then j else j',j',mfSpecs)) pf
         performGC
+        putStrLn "done!"
         return formattedProof -- fmap (\(rn,j) -> mkEntailJ rs j) pf
       _ -> do
         return $ Leaf ("*",g,Term "no proof found" [],[]) -- Leaf (j { goal = Term "no proof found" [] })
@@ -192,8 +193,9 @@ matchingRules rs t = do
   -- t <- gets substState >>= return . (t' <.)
   incDepth
   rs' <- instantiateRules rs
-  let !rules = [r | r@(Rule _ c _) <- rs', Just s <- [safeUnify t c]]
+  let !rules = [r | r@(Rule _ c ps) <- rs', Just s <- [safeUnify t c], not $ any (=="fail") [f | Term f _ <- ps]]
   guard $ not (null rules)
+  -- guard $ not $ any (\r -> or [f == "fail" | Term f _ <- premisesR r]) rules
   each rules
 
 

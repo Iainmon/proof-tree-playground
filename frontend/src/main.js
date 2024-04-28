@@ -186,9 +186,18 @@ function Handler() {
 
 
     function handleNewTree(tree) {
+        setX(0);
+        setY(0);
         setStoreTree({...tree});
         setTree(tree);
         setPath([0]);
+    }
+
+    function onWheel(e) {
+        setY(e.deltaY + y);
+        setX(e.deltaX + x);
+        forceUpdate();
+        e.preventDefault();
     }
 
     window.addEventListener("wheel", e => {
@@ -197,7 +206,7 @@ function Handler() {
         setX(e.deltaX + x);
 
         forceUpdate();
-        e.preventDefault();
+        // e.preventDefault();
 
 
     }, { passive: false });
@@ -211,11 +220,13 @@ function Handler() {
 
     return (
         <>
-            <div className="proof-tree" style={{
-                transform: 'translate('+ -x + 'px, ' + -y + 'px) scale(1)'
-            }}>
-                <Node tree={tree} />
-            </div>
+                <div className="proof-tree" style={{
+                        transform: 'translate('+ -x + 'px, ' + -y + 'px) scale(1)'
+                    }}>
+                    <Node tree={tree} />
+                </div>
+
+
             <div className="fixed-bottom">
                 <Dropdown>
                     <Dropdown.Toggle variant="success" id="dropdown-basic">
