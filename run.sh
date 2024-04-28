@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 
-git pull;
+set -e
 
-npx kill-port 3000;
-npx kill-port 9000;
+git pull
 
-cd frontend;
-yarn;
-yarn run start-server;
+npx kill-port 3000
+npx kill-port 9000
+
+cd frontend
+yarn
+yarn run start-server
 
 cd ..
 cd server
-yarn;
+yarn
 rm -rf dist-newstyle
 cabal clean
 rm nohup.out
