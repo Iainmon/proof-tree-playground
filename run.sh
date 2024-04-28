@@ -16,6 +16,6 @@ cd server
 yarn
 rm -rf dist-newstyle
 cabal clean
-rm nohup.out
+rm -f nohup.out
 # nohup yarn run run-server &
 nohup cabal run server -O2 &
