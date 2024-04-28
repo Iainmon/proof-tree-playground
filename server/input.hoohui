@@ -37,3 +37,100 @@
   ,  fib({N2},{K})
   ,  fib({N1},{L})
   ,  plus({K},{L},{M});
+
+[mult_s_l]
+  succ({N}) * {M} = {K} -:
+    {N} * {M} = {NM},
+    {M} + {NM} = {K} ;
+
+`{N} + {M} = {K}` :-: plus({N},{M},{K}) ;
+[plus_z_z] 
+  0 + 0 = 0 -: ;
+[plus_z_l] 
+  0 + {N} = {N} -: {N} : nat;
+[plus_z_r]
+  {N} + 0 = {N} -: {N} : nat;
+[plus_ss]
+  succ({N}) + succ({M}) = succ(succ({K})) 
+    -: {N} + {M} = {K} ;
+[plus_succ_l]
+  succ({N}) + {M} = succ({K}) 
+    -: {N} + {M} = {K} ;
+[plus_succ_r]
+  {N} + succ({M}) = succ({K}) 
+    -: {N} + {M} = {K} ;
+
+
+`{N} - {M} = {K}` :-: minus({N},{M},{K}) ;
+[minus_z_z] 
+  0 - 0 = 0 -: ;
+[minus_z_r]
+  {N} - 0 = {N} -:
+    {N} : nat ;
+[minus_z_l] 
+  0 - {N} = 0 -: 
+    {N} : nat ;
+[minus_id]
+  succ({N}) - succ({M}) = {K} -:
+    {N} - {M} = {K} ;
+    {--
+[minus_succ_l] 
+  succ({N}) - {M} = succ({K}) -: 
+    {N} - {M} = {K} ;
+[minus_succ_r]
+  {N} - succ({M}) = {K} -:
+    {N} - {M} = succ({K}) ;--}
+
+
+[minus2] sub({A},{B},{C}) -: {B} + {C} = {A} ;
+[mult_s_s]
+  succ({N}) * succ({M}) = succ({K}) -:
+    {N} + {M} = {NpM},
+    {N} * {M} = {NM},
+    {NpM} + {NM} = {K} ;
+[mult_s_s_two]
+  succ({N}) * succ({M}) = succ({K}) -:
+    succ({N}) * {M} = {NM},
+    {N} + {NM} = {K} ;
+[mult_succ_l] mult(succ({N}),{M},{K}) -: mult({N},{M},{A}), plus({M},{A},{K}) ;
+[mult_succ_r] mult({N},succ({M}),{K}) -: mult({N},{M},{A}), plus({N},{A},{K}) ;
+
+
+[mult_s_l]
+  succ({N}) * {M} = {K} -:
+    {N} * succ({M}) = {K} ;
+    
+
+
+
+[mult_s_s]
+  succ({N}) * succ({M}) = succ({K}) -:
+    {N} + {M} = {NpM},
+    {N} * {M} = {NM},
+    {NpM} + {NM} = {K} ;
+
+
+
+
+
+    `{N} * {M} = {K}` :-: mult({N},{M},{K}) ;
+
+[mult_0_0] 
+  0 * 0 = 0 -: ;
+[mult_0_l] 
+  0 * {N} = 0 -: {N} : nat;
+[mult_0_r] 
+  {N} * 0 = 0 -: {N} : nat;
+[mult_s_r]
+  {N} * succ({M}) = {K} -:
+    {N} * {M} = {NM},
+    {N} + {NM} = {K} ;
+[mult_s_l]
+  succ({N}) * {M} = {K} -:
+    {N} * succ({M}) = {K} ;
+    
+
+    [mult_s_l]
+  succ({N}) * succ({M}) = {K} -:
+    {M} * succ(succ({N})) = {K} ;
+    
