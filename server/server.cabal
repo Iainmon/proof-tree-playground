@@ -46,7 +46,7 @@ executable server
         Control.Monad.Effector
         Control.Monad.Branch
         Control.Monad.ListT
-        Control.Monad.ProofT
+        Control.Monad.ForkT
         Playground
 
     -- LANGUAGE extensions used by modules in this package.
