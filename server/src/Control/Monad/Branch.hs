@@ -67,6 +67,7 @@ instance MonadTrans (BranchT s) where
 
           --  ,MonadTrans (BranchT s)
 
+
 -- type Branch s a = BranchT s Identity a
 newtype Branch s a = Branch { runBranch :: s -> [(a,s)] }
   deriving (Functor

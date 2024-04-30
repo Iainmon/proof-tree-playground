@@ -32,9 +32,10 @@ import qualified Data.Map.Strict as Map
 
 import System.Mem (performGC)
 
-freeVars :: Term v -> [v]
-freeVars (Var v) = [v]
-freeVars (Term _ ts) = concatMap freeVars ts
+import Hoohui.ProofMachine
+import Hoohui.Prover
+import Hoohui.Types
+
 
 
 parseJudgement :: String -> String -> BEntailJ
@@ -89,8 +90,8 @@ instance Latex FMTJ where
                                   | otherwise = "\\mathcal{" ++ v ++ "}"
 
 
-prove' (EntailJ rs g r s) = fmap (\(rn,_,j) -> mkEntailJ rs j) pf
-  where pf = fst $ head $ flip run emptyS $ myProofs rs g -- prove rs g
+-- prove' (EntailJ rs g r s) = fmap (\(rn,_,j) -> mkEntailJ rs j) pf
+--   where pf = fst $ head $ flip run emptyS $ myProofs rs g -- prove rs g
 
 provePM' (EntailJ rs g r s) = fmap (\(rn,_,j) -> mkEntailJ rs j) pf
   where pf = fst $ head proofs
@@ -122,155 +123,7 @@ proveIO j@(EntailJ rs g r s) src q
 
 test s = proveIO (mkEntailJ rs (parseTerm s))
 
-type HTerm = Term Name
-type HSubst = Subst Name
-type HRule = Rule Name
-type HRuleSystem = RuleSystem Name
 
-type RuleName = Name
-type HJudgement = (RuleName,HTerm,HTerm)
-type HProof = Proof HJudgement
-
-data ProofState = ProofState 
-  { substState :: HSubst
-  , metaVarCount :: Int
-  , metaVars :: [Name]
-  , knowledgeBase :: Map HTerm HProof
-  , depthCounter :: Int
-  } deriving (Show)
-
-emptyS :: Subst v
-emptyS = U.empty
-
-emptyPS :: ProofState
-emptyPS = ProofState emptyS 0 [] Map.empty 0
-
-putSubst :: HSubst -> ProofMachine ()
-putSubst s = modify (\pst -> pst {substState = s})
-
-getSubst :: ProofMachine HSubst
-getSubst = gets substState
-
-modifySubst :: (HSubst -> HSubst) -> ProofMachine ()
-modifySubst f = do
-  s <- gets substState
-  putSubst (f s)
-
-newMetaVar :: Name -> ProofMachine Name
-newMetaVar n = do
-  modify (\pst -> pst {metaVarCount = metaVarCount pst + 1})
-  i <- gets metaVarCount
-  let v = n ++ "_{" ++ show i ++ "}"
-  modify (\pst -> pst {metaVars = v : metaVars pst})
-  return v
-
-incMetaVar :: ProofMachine Int
-incMetaVar = do
-  n <- gets metaVarCount
-  modify (\pst -> pst {metaVarCount = n + 1})
-  gets metaVarCount
-
-incDepth :: ProofMachine ()
-incDepth = modify (\pst -> pst {depthCounter = depthCounter pst + 1})
-
-newProof :: HTerm -> HProof -> ProofMachine ()
-newProof t _ | not (null (freeVars t)) = return ()
-newProof t p = do
-  kb <- gets knowledgeBase
-  modify (\pst -> pst {knowledgeBase = Map.insert t p kb})
-
-instantiateRules :: HRuleSystem -> ProofMachine HRuleSystem
-instantiateRules = instantiatePM-- = gets substState >>= return . instantiate r
-
-checkMaxDepth :: Int -> ProofMachine ()
-checkMaxDepth d = do
-  i <- gets depthCounter
-  -- i <- gets metaVarCount
-  guard $ i < d
-
-matchingRules :: HRuleSystem -> HTerm -> ProofMachine HRule
-matchingRules rs t = do
-  -- t <- gets substState >>= return . (t' <.)
-  incDepth
-  rs' <- instantiateRules rs
-  let !rules = [r | r@(Rule _ c ps) <- rs', Just s <- [safeUnify t c], not $ any (=="fail") [f | Term f _ <- ps]]
-  guard $ not (null rules)
-  -- guard $ not $ any (\r -> or [f == "fail" | Term f _ <- premisesR r]) rules
-  each rules
-
-
-proofsPM :: HRuleSystem -> HTerm -> ProofMachine HProof
-proofsPM rs t' = do
-  t <- gets substState >>= return . (t' <.)
-  rule <- matchingRules rs t
-  let rn = nameR rule
-  let c = conclusionR rule
-  let s' = unifyOne c t
-  let group = map (apply s') (premisesR rule)
-  !pfs <- sequence (map (proofsPMCached rs) group)
-  s'' <- gets substState
-  putSubst (s'' <.> s')
-  s <- gets substState
-  let !j = (rn,t,t <. s)
-  let !proof = Proof j pfs
-  newProof (t <. s) proof
-  return proof
-
-proofsPMCached :: HRuleSystem -> HTerm -> ProofMachine HProof
-proofsPMCached rs t' = do
-  checkMaxDepth 100000 -- 1000000
-  t <- gets substState >>= return . (t' <.)
-  kb <- gets (Map.lookup t . knowledgeBase)
-  case kb of
-    Just p -> return p
-    Nothing -> proofsPM rs t
-
-type ProofMachine a = Branch ProofState a
-
-
-
-instantiatePM :: HRuleSystem -> ProofMachine HRuleSystem
-instantiatePM [] = return []
-instantiatePM (r:rs) = do
-  n <- incMetaVar
-  let r' = r {conclusionR = incrementFV n (conclusionR r), premisesR = map (incrementFV n) (premisesR r)}
-  rs' <- instantiatePM rs
-  return (r':rs')
-  where incrementFV n (Var v) = Var (v ++ "_{" ++ show n ++ "}")
-        incrementFV n (Term f ts) = Term f (map (incrementFV n) ts)
-
-
-instantiate :: HRuleSystem -> HSubst -> HRuleSystem
-instantiate rs s = go rs (length freeVars)
-  where incrementFV n (Var v) = Var (v ++ "_{" ++ show n ++ "}")
-        incrementFV n (Term f ts) = Term f (map (incrementFV n) ts)
-        freeVars = Map.keys s
-        go [] _ = []
-        go (r:rs) n = r {conclusionR = incrementFV n (conclusionR r), premisesR = map (incrementFV n) (premisesR r)} : go rs (n+1)
-
-
-
-instantiateB :: HRuleSystem -> Branch HSubst HRuleSystem
-instantiateB rs = do
-  s <- get
-  return $ instantiate rs s
-
-myProofs :: HRuleSystem -> HTerm -> Branch HSubst HProof
-myProofs rs t' = do
-  t <- get >>= return . (t' <.)
-  rs' <- instantiateB rs
-  let rules = [r | r@(Rule _ c _) <- rs', Just s <- [safeUnify t c]]
-  guard $ not (null rules)
-  rule <- each rules
-  let rn = nameR rule
-  let c = conclusionR rule
-  let s' = unifyOne t c
-  let group = map (apply s') (premisesR rule)
-  pfs <- sequence (map (myProofs rs) group)
-  s'' <- get
-  put (s' <.> s'')
-  s <- get
-  return $ Proof (rn,t,(t <. s)) pfs
 
 
 
@@ -296,12 +149,12 @@ rs = parseRuleSystem $ unlines
       ]
 
 
-qmProofs e = map fmtHProof $ fmap fst $ flip run emptyS (myProofs rs (parseTerm e))
-  where rs = parseRuleSystem $ unlines 
-            [ "[less_than_nec]   less_than(Z,S(Z)) -: ;"
-            , "[less_than_base]  less_than(S({N}),S({M})) -: less_than({N},{M});"
-            , "[less_than_trans] less_than({N},{M}) -: less_than({N},{K}), less_than({K},{M}) ;"
-            ]
+-- qmProofs e = map fmtHProof $ fmap fst $ flip run emptyS (myProofs rs (parseTerm e))
+--   where rs = parseRuleSystem $ unlines 
+--             [ "[less_than_nec]   less_than(Z,S(Z)) -: ;"
+--             , "[less_than_base]  less_than(S({N}),S({M})) -: less_than({N},{M});"
+--             , "[less_than_trans] less_than({N},{M}) -: less_than({N},{K}), less_than({K},{M}) ;"
+--             ]
 
 
 {-

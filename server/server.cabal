@@ -42,12 +42,16 @@ executable server
         Server.Service
         Infer
         Hoohui
+        Hoohui.Types
         Hoohui.Parser
+        Hoohui.Prover
+        Hoohui.ProofMachine
         Control.Monad.Effector
         Control.Monad.Branch
         Control.Monad.ListT
         Control.Monad.ForkT
         Playground
+
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -70,7 +74,7 @@ executable server
         mtl,
         transformers,
         bytestring,
-        general-unification
+        general-unification,
     
     hs-source-dirs:   
         app,

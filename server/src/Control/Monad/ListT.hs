@@ -43,12 +43,21 @@ instance Applicative m => Alternative (ListT m) where
 
 instance Monad m => MonadPlus (ListT m) where
   mzero :: Monad m => ListT m a
-  mzero = ListT $ return []
+  mzero = ListT $  return []
   mplus :: Monad m => ListT m a -> ListT m a -> ListT m a
   mplus m n = ListT $ do
     as <- runListT m
     bs <- runListT n
     return $ as +|+ bs
+
+-- instance MonadPlus m => MonadPlus (ListT m) where
+--   mzero :: MonadPlus m => ListT m a
+--   mzero = ListT $ mzero -- return []
+--   mplus :: MonadPlus m => ListT m a -> ListT m a -> ListT m a
+--   mplus m n = ListT $ do
+--     as <- runListT m
+--     bs <- runListT n
+--     return $ as +|+ bs
 
 instance Foldable f => Foldable (ListT f) where
   -- foldr :: Foldable f => (a -> b -> b) -> b -> ListT f a -> b
