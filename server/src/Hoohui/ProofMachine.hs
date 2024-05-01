@@ -24,7 +24,11 @@ data ProofState = ProofState
   , depthCounter :: Int
   } deriving (Show)
 
+
 type ProofMachine a = Branch ProofState a
+
+
+-- runProofMachine :: ProofMachine 
 
 emptyS :: Subst v
 emptyS = U.empty

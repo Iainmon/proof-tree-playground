@@ -1,8 +1,12 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module Control.Monad.Branch where
 
 
@@ -25,6 +29,9 @@ import Control.Monad (MonadPlus(..))
 -- data Branch s a = Branch (s -> [(a,s)])
 
 import Control.Monad.ListT
+import Control.Monad.MonadStatePlus
+
+
 
 -- instance Applicative m => Monoid (ListT m a) where
 --   mempty :: Applicative m => ListT m a
@@ -65,7 +72,8 @@ instance MonadTrans (BranchT s) where
     a <- m
     return [(a,s)]
 
-          --  ,MonadTrans (BranchT s)
+
+-- class Monad m => MonadBranch 
 
 
 -- type Branch s a = BranchT s Identity a
@@ -78,6 +86,144 @@ newtype Branch s a = Branch { runBranch :: s -> [(a,s)] }
           ,MonadState s)
           via (BranchT s Identity)
 
+newtype BrancherT g s m a = BrancherT { runBrancherT :: s -> g -> m ([(a,s)],g) }
+  deriving (Functor
+          ,Applicative
+          ,Monad
+          ,Alternative
+          ,MonadPlus
+          ,MonadState s)
+          via (StateT s (ListT (StateT g m)))
+          -- via (BranchT s (StateT g m))
+
+instance MonadTrans (BrancherT g s) where
+  lift :: Monad m => m a -> BrancherT g s m a
+  lift m = BrancherT $ \s g -> do
+    a <- m
+    return (pure (a,s),g)
+
+instance Monad m => MonadStatePlus g s (BrancherT g s m) where
+  -- globalGet = BrancherT $ \s g -> return (pure (g,s),g)
+  -- globalPut g = BrancherT $ \s _ -> return (pure ((),s),g)
+  globalState :: Monad m => (g -> (a, g)) -> BrancherT g s m a
+  globalState f = BrancherT $ \s g -> do
+    let ~(a,g') = f g
+    return (pure (a,s),g')
+  localState = state
+
+newtype Brancher g s a = Brancher { runBrancher :: s -> g -> ([(a,s)],g) }
+  deriving (Functor
+          ,Applicative
+          ,Monad
+          ,Alternative
+          ,MonadPlus
+          ,MonadState s
+          ,MonadStatePlus g s)
+          via (BrancherT g s Identity)
+
+
+-- putGlobal :: Monad m => g -> BrancherT g s m ()
+-- putLocal :: Monad m => s -> BrancherT g s m ()
+
+-- class MonadBranch s m => MonadBrancher g s m | m -> s, m -> g where
+--   branches :: Monad m' => m a -> BranchT s m' a
+--   global :: Monad m' => m a -> StateT g m' a
+--   brancher :: (s -> g -> ([(a,s)],g)) -> m a
+-- class MonadState s m => MonadBrancher s m | m -> s where
+  
+
+-- class (Monad m, MonadState s m) => MonadBranch s m | m -> s where
+--   each :: [a] -> m a
+  -- branch :: (s -> [(a,s)]) -> m a
+-- class (Monad m,MonadBranch s m) => MonadBrancher g s m | m -> s, m -> g where
+
+
+
+class MonadState s m => MonadBranch s m | m -> s where
+  each :: [a] -> m a
+  each as = branch $ \s -> map (,s) as
+  branch :: (s -> [(a,s)]) -> m a
+  {-# MINIMAL branch #-}
+
+
+instance Monad m => MonadBranch s (BranchT s m) where
+  each :: Monad m => [a] -> BranchT s m a
+  each as = BranchT $ \s -> ListT $ return $ map (,s) as
+  branch :: (s -> [(a,s)]) -> BranchT s m a
+  branch f = BranchT $ \s -> ListT $ return $ f s
+
+instance MonadBranch s (Branch s) where
+  each :: [a] -> Branch s a
+  each as = Branch $ \s -> map (,s) as
+  branch :: (s -> [(a,s)]) -> Branch s a
+  branch f = Branch $ \s -> f s
+
+instance MonadBranch s m => MonadBranch s (StateT s m) where
+  each :: Monad m => [a] -> StateT s m a
+  each as = lift (each as)
+  branch :: (s -> [(a,s)]) -> StateT s m a
+  branch f = lift (branch f)
+
+instance MonadBranch s m => MonadBranch s (ListT m) where
+  each :: Monad m => [a] -> ListT m a
+  each as = lift (each as)
+  branch :: (s -> [(a,s)]) -> ListT m a
+  branch f = lift (branch f)
+
+-- instance MonadState s m => MonadBranch s m where
+--   branch f = do
+--     s <- get
+--     ~(a,s') <- each (f s)
+--     put s'
+--     return a
+
+-- instance MonadBranch m
+
+-- test :: MonadBranch Int m => m (Int,Int)
+-- test = do
+--   a <- each [-1,1]
+--   b <- each [4,5,6]
+--   put (a*b)
+--   return (a,b)
+-- test :: MonadBranch Int m => m [(Int,Int)]
+-- test = do
+--   each [1,2,3] >>= put
+--   sequence $ map (\a -> do {b <- each [4,5,6]; return (a,a*b)}) [-1,1]
+  
+-- t1 = runBranch test 1
+-- t2 = runIdentity $ runListT $ runBranchT test 1
+-- t3 = runBrancher test 1 1
+-- t4 = runIdentity $ runBrancherT test 1 1
+
+class (Monad m, MonadState s m, MonadStatePlus g s m) => MonadBrancher g s m | m -> s, m -> g where
+  brancher :: (s -> g -> ([(a,s)],g)) -> m a
+
+
+
+instance Monad m => MonadBrancher g s (BrancherT g s m) where
+  brancher :: Monad m => (s -> g -> ([(a, s)], g)) -> BrancherT g s m a
+  brancher f = BrancherT $ \s g -> return $ f s g
+
+instance MonadBrancher g s (Brancher g s) where
+  brancher :: (s -> g -> ([(a, s)], g)) -> Brancher g s a
+  brancher f = Brancher $ \s g -> f s g
+
+instance Monad m => MonadBranch s (BrancherT g s m) where
+  each :: Monad m => [a] -> BrancherT g s m a
+  each as = BrancherT $ \s g -> return (map (,s) as,g)
+  branch :: (s -> [(a,s)]) -> BrancherT g s m a
+  branch f = BrancherT $ \s g -> return (f s,g)
+
+instance MonadBranch s (Brancher g s) where
+  each :: [a] -> Brancher g s a
+  each as = Brancher $ \s g -> (map (,s) as,g)
+  branch :: (s -> [(a,s)]) -> Brancher g s a
+  branch f = Brancher $ \s g -> (f s,g)
+ 
+
+
+-- instance MonadBrancher g s m => MonadBranch s m where
+--   each as = brancher $ \s g -> (map (,s) as,g)
 
 -- newtype BranchT' s1 s2 m a = BranchT' { runBranchT' :: s2 -> s1 -> m ([(a,s2)],s1)}
 
@@ -86,9 +232,9 @@ newtype Branch s a = Branch { runBranch :: s -> [(a,s)] }
 -- pattern Branch :: (s -> [(a,s)]) -> Branch s a
 -- pattern Branch f = StateT f
 
-branch :: (s -> [(a,s)]) -> Branch s a
--- branch f = BranchT $ \s -> ListT $ Identity $ f s -- Branch
-branch f = Branch $ \s -> f s -- Branch
+-- branch :: (s -> [(a,s)]) -> Branch s a
+-- -- branch f = BranchT $ \s -> ListT $ Identity $ f s -- Branch
+-- branch f = Branch $ \s -> f s -- Branch
 
 run :: Branch s a -> (s -> [(a,s)])
 run b s = runBranch b s
@@ -123,8 +269,8 @@ eff f = branch (pure . f)
 -- modify :: (s -> s) -> Branch s ()
 -- modify f = branch (\s -> [((),f s)])
 
-global :: (s -> s) -> Branch s ()
-global f = branch (\s -> [((),f s)])
+-- global :: (s -> s) -> Branch s ()
+-- global f = branch (\s -> [((),f s)])
 
 terminate :: Branch s a
 -- terminate = empty
@@ -143,8 +289,8 @@ terminate = branch (const [])
 -- class Transpose t where
 --   transpose :: t [a] -> [t a]
 
-each :: [a] -> Branch s a
-each as = Branch $ \s -> map (,s) as
+-- each :: [a] -> Branch s a
+-- each as = Branch $ \s -> map (,s) as
 
 -- lift' ms = BranchT $ \s -> ListT $ Identity $ (map (,s)) ms
 lift' :: [a] -> Branch s a

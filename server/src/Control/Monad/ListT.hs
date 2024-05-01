@@ -1,6 +1,9 @@
+{-# LANGUAGE UndecidableInstances #-}
 module Control.Monad.ListT where
 
+import Control.Monad.State
 import Control.Monad.Trans
+import Control.Monad.Trans.Class
 import Control.Applicative ( Alternative(empty, (<|>)), liftA2 )
 import Data.List (transpose)
 import Control.Monad (MonadPlus(..))
@@ -74,3 +77,9 @@ instance MonadTrans ListT where
 instance MonadIO m => MonadIO (ListT m) where
   liftIO :: MonadIO m => IO a -> ListT m a
   liftIO = lift . liftIO
+
+
+instance MonadState s m => MonadState s (ListT m) where
+  get = lift get
+  put = lift . put
+  state = lift . state

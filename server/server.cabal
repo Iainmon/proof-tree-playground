@@ -50,6 +50,7 @@ executable server
         Control.Monad.Branch
         Control.Monad.ListT
         Control.Monad.ForkT
+        Control.Monad.MonadStatePlus
         Playground
 
 
