@@ -25,6 +25,7 @@ extra-source-files: CHANGELOG.md
 executable server
     ghc-options: 
         -rtsopts
+        -O2
         -- -ddump-deriv
         
 

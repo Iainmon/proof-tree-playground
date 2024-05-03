@@ -36,18 +36,32 @@ class Monad m => MonadStatePlus g s m | m -> s, m -> g where
 
 -- instance (MonadTrans t, Monad m, MonadState s (t m)) => MonadStatePlus g s (StateT s (t m))
 -- instance (MonadTrans t,MonadState s m) => MonadStatePlus g s (StateT s (t (StateT g m))) where
+localGets :: MonadStatePlus g s m => (s -> a) -> m a
+localGets f = localGet >>= return . f
 
+localModify :: MonadStatePlus g s m => (s -> s) -> m ()
+localModify f = do
+  s <- localGet
+  localPut (f s)
+
+globalGets :: MonadStatePlus g s m => (g -> a) -> m a
+globalGets f = globalGet >>= return . f
+
+globalModify :: MonadStatePlus g s m => (g -> g) -> m ()
+globalModify f = do
+  g <- globalGet
+  globalPut (f g)
 
 global :: (Monad m,MonadTrans mt,MonadStatePlus g s (mt m)) => StateT g m a -> mt m a
 global s = do
   g <- globalGet
-  (a,g') <- lift $ runStateT s g
+  ~(a,g') <- lift $ runStateT s g
   globalPut g'
   return a
 
 local :: (Monad m,MonadTrans mt,MonadStatePlus g s (mt m)) => StateT s m a -> mt m a
 local s = do
   g <- localGet
-  (a,g') <- lift $ runStateT s g
+  ~(a,g') <- lift $ runStateT s g
   localPut g'
   return a

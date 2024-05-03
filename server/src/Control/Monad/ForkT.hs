@@ -9,7 +9,7 @@ import Control.Applicative ( Alternative(empty, (<|>)), liftA2 )
 import Control.Monad (MonadPlus(..))
 import Data.Functor.Identity (Identity(..))
 
-import Control.Monad.ListT
+import Control.Monad.ListT hiding (ForkT(..))
 import Control.Monad.Branch (BranchT(..), Branch(..))
 import Control.Monad.State
 

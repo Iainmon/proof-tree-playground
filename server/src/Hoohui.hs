@@ -27,8 +27,10 @@ import Control.Monad.State
 import Control.Applicative ( Alternative((<|>), empty) )
 import Control.Monad (guard)
 
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
+-- import Data.Map.Strict (Map)
+-- import qualified Data.Map.Strict as Map
+import Data.Map (Map)
+import qualified Data.Map as Map
 
 import System.Mem (performGC)
 
@@ -94,22 +96,22 @@ instance Latex FMTJ where
 --   where pf = fst $ head $ flip run emptyS $ myProofs rs g -- prove rs g
 
 provePM' (EntailJ rs g r s) = fmap (\(rn,_,j) -> mkEntailJ rs j) pf
-  where pf = fst $ head proofs
-        proofs = flip run emptyPS $ proofsPM rs g
+  where pf = fst $ fst $ head proofs
+        proofs = runProofMachine $ proofsPM rs g
 
 maybeHead (x:_) = Just x
 maybeHead _ = Nothing
 
-maybeRunProofs rs g = let !x = maybeHead $ run (proofsPM rs g) emptyPS in x
+maybeRunProofs rs g = let !x = maybeHead $ runProofMachine (proofsPM rs g) in x
 
 proveIO :: EntailJ Name -> String -> String -> IO (Proof FMTJ)
 proveIO j@(EntailJ rs g r s) src q
   = case maybeRunProofs rs g of
-      Just (pf,pst) -> do
+      Just ((pf,pst),gs) -> do
         performGC
         -- let (pf,pst) = proofs
         -- print $ map (fmtHJudgement . conclusion) $ Map.elems $ knowledgeBase pst
-        print $ Map.size $ knowledgeBase pst
+        -- print $ Map.size $ knowledgeBase gs
         print $ metaVarCount pst
         print $ depthCounter pst
         let fv = freeVars g

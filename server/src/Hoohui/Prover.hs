@@ -11,9 +11,12 @@ import Control.Monad.Branch
 import Control.Monad.State
 import Control.Applicative ( Alternative((<|>), empty) )
 import Control.Monad (guard)
+import Control.Monad.MonadStatePlus
 
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
+-- import Data.Map.Strict (Map)
+-- import qualified Data.Map.Strict as Map
+import Data.Map (Map)
+import qualified Data.Map as Map
 
 
 import Hoohui.ProofMachine
@@ -22,7 +25,7 @@ import Hoohui.Types
 
 matchingRules :: HRuleSystem -> HTerm -> ProofMachine HRule
 matchingRules rs t = do
-  -- t <- gets substState >>= return . (t' <.)
+  -- t <- localGets substState >>= return . (t' <.)
   incDepth
   rs' <- instantiateRules rs
   let !rules = [r | r@(Rule _ c ps) <- rs', Just s <- [safeUnify t c], not $ any (=="fail") [f | Term f _ <- ps]]
@@ -33,16 +36,16 @@ matchingRules rs t = do
 
 proofsPM :: HRuleSystem -> HTerm -> ProofMachine HProof
 proofsPM rs t' = do
-  t <- gets substState >>= return . (t' <.)
+  t <- localGets substState >>= return . (t' <.)
   rule <- matchingRules rs t
   let rn = nameR rule
   let c = conclusionR rule
   let s' = unifyOne c t
   let group = map (apply s') (premisesR rule)
-  !pfs <- sequence (map (proofsPMCached rs) group)
-  s'' <- gets substState
+  pfs <- sequence (map (proofsPMCached rs) group)
+  s'' <- localGets substState
   putSubst (s'' <.> s')
-  s <- gets substState
+  s <- localGets substState
   let !j = (rn,t,t <. s)
   let !proof = Proof j pfs
   newProof (t <. s) proof
@@ -50,12 +53,13 @@ proofsPM rs t' = do
 
 proofsPMCached :: HRuleSystem -> HTerm -> ProofMachine HProof
 proofsPMCached rs t' = do
-  checkMaxDepth 100000 -- 1000000
-  t <- gets substState >>= return . (t' <.)
-  kb <- gets (Map.lookup t . knowledgeBase)
-  case kb of
-    Just p -> return p
-    Nothing -> proofsPM rs t
+  checkMaxDepth 100 -- 1000000
+  t <- localGets substState >>= return . (t' <.)
+  if hasFreeVars t then proofsPM rs t else do
+    kb <- globalGets (Map.lookup t . knowledgeBase)
+    case kb of
+      Just p -> return p
+      Nothing -> proofsPM rs t
 
 
 instantiateRules :: HRuleSystem -> ProofMachine HRuleSystem

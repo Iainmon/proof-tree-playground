@@ -86,31 +86,58 @@ newtype Branch s a = Branch { runBranch :: s -> [(a,s)] }
           ,MonadState s)
           via (BranchT s Identity)
 
-newtype BrancherT g s m a = BrancherT { runBrancherT :: s -> g -> m ([(a,s)],g) }
+-- newtype BrancherT g s m a = BrancherT { runBrancherT :: s -> g -> m ([(a,s)],g) }
+-- StateT g (BranchT s m) a = g -> BranchT s m (a,g)
+--                          = g -> s -> ListT m ((a,s),g)
+--                          = g -> s -> m [((a,s),g)]
+-- g -> s -> m ([(a,s)],g) = 
+newtype BrancherT g s m a = BrancherT { runBrancherT :: StateT s (ListT (StateT g m)) a }
   deriving (Functor
           ,Applicative
           ,Monad
           ,Alternative
           ,MonadPlus
-          ,MonadState s)
-          via (StateT s (ListT (StateT g m)))
-          -- via (BranchT s (StateT g m))
+          -- ,MonadState s
+          )
+          -- via (StateT s (ListT (StateT g m)))
+          via (BranchT s (StateT g m))
+
+
+instance Monad m => MonadState s (BrancherT g s m) where
+  get = BrancherT $ do
+    get
+  put s = BrancherT $ do
+    put s
+
 
 instance MonadTrans (BrancherT g s) where
   lift :: Monad m => m a -> BrancherT g s m a
-  lift m = BrancherT $ \s g -> do
+  lift m = BrancherT $ StateT $ \s -> ListT $ StateT $ \g -> do
     a <- m
     return (pure (a,s),g)
+  -- lift m = BrancherT $ do
+  --   a <- lift $ lift $ lift m
+  --   return a
+  -- lift m = BrancherT $ \s -> ListT $ StateT $ \g -> do
+  --   a <- m
+  --   return (pure (a,s),g)
 
 instance Monad m => MonadStatePlus g s (BrancherT g s m) where
-  -- globalGet = BrancherT $ \s g -> return (pure (g,s),g)
-  -- globalPut g = BrancherT $ \s _ -> return (pure ((),s),g)
-  globalState :: Monad m => (g -> (a, g)) -> BrancherT g s m a
-  globalState f = BrancherT $ \s g -> do
-    let ~(a,g') = f g
-    return (pure (a,s),g')
-  localState = state
-
+  globalGet = BrancherT $ StateT $ \s -> ListT $ do
+    g <- get
+    return $ pure (g,s)
+  globalPut g = BrancherT $ StateT $ \s -> ListT $ do
+    put g
+    return $ pure ((),s)
+  -- globalState :: Monad m => (g -> (a, g)) -> BrancherT g s m a
+  -- globalState f = BrancherT $ \s -> do
+  --   g <- lift $ lift $ get
+  --   let ~(a,g') = f g
+  --   lift $ lift $ put g'
+  --   lift $ lift $ return (a,s)
+    -- ListT $ StateT $ \g -> return ([(fst (f g),s)],snd (f g))
+  localGet = BrancherT $ StateT $ \s -> ListT $ StateT $ \g -> return $ (pure (s,s),g)
+  localPut s = BrancherT $ StateT $ \_ -> ListT $ StateT $ \g -> return $ (pure ((),s),g)
 newtype Brancher g s a = Brancher { runBrancher :: s -> g -> ([(a,s)],g) }
   deriving (Functor
           ,Applicative
@@ -118,8 +145,17 @@ newtype Brancher g s a = Brancher { runBrancher :: s -> g -> ([(a,s)],g) }
           ,Alternative
           ,MonadPlus
           ,MonadState s
-          ,MonadStatePlus g s)
+          ,MonadStatePlus g s
+          -- ,MonadBranch s
+          )
           via (BrancherT g s Identity)
+
+-- toBrancherT :: Brancher g s a -> BrancherT g s Identity a
+-- toBrancherT (Brancher f) = BrancherT $ \s -> ListT $ StateT $ \g -> return $ f s g
+
+-- instance Monad (Brancher g s) where
+--   (>>=) :: Brancher g s a -> (a -> Brancher g s b) -> Brancher g s b
+--   m >>= f = 
 
 
 -- putGlobal :: Monad m => g -> BrancherT g s m ()
@@ -160,13 +196,15 @@ instance MonadBranch s (Branch s) where
 
 instance MonadBranch s m => MonadBranch s (StateT s m) where
   each :: Monad m => [a] -> StateT s m a
-  each as = lift (each as)
+  each as = do
+    each as
   branch :: (s -> [(a,s)]) -> StateT s m a
   branch f = lift (branch f)
 
 instance MonadBranch s m => MonadBranch s (ListT m) where
   each :: Monad m => [a] -> ListT m a
-  each as = lift (each as)
+  each as = do
+    each as
   branch :: (s -> [(a,s)]) -> ListT m a
   branch f = lift (branch f)
 
@@ -202,24 +240,36 @@ class (Monad m, MonadState s m, MonadStatePlus g s m) => MonadBrancher g s m | m
 
 instance Monad m => MonadBrancher g s (BrancherT g s m) where
   brancher :: Monad m => (s -> g -> ([(a, s)], g)) -> BrancherT g s m a
-  brancher f = BrancherT $ \s g -> return $ f s g
+  brancher f = BrancherT $ StateT$ \s -> ListT $ StateT $ \g -> return $ f s g
 
 instance MonadBrancher g s (Brancher g s) where
   brancher :: (s -> g -> ([(a, s)], g)) -> Brancher g s a
   brancher f = Brancher $ \s g -> f s g
 
 instance Monad m => MonadBranch s (BrancherT g s m) where
-  each :: Monad m => [a] -> BrancherT g s m a
-  each as = BrancherT $ \s g -> return (map (,s) as,g)
-  branch :: (s -> [(a,s)]) -> BrancherT g s m a
-  branch f = BrancherT $ \s g -> return (f s,g)
+  -- each :: Monad m => [a] -> BrancherT g s m a
+  each as = BrancherT $ StateT $ \s -> ListT $ StateT $ \g -> return $ (,g) $ map (,s) as
+  -- each as = do
+  --   s <- get
+  --   msum (map (\a -> do {put s; return a}) as)
 
-instance MonadBranch s (Brancher g s) where
-  each :: [a] -> Brancher g s a
-  each as = Brancher $ \s g -> (map (,s) as,g)
-  branch :: (s -> [(a,s)]) -> Brancher g s a
-  branch f = Brancher $ \s g -> (f s,g)
+  -- each as = BrancherT $ do
+  --   lift $ ListT (return as)
+  branch :: (s -> [(a,s)]) -> BrancherT g s m a
+  branch f = BrancherT $ StateT $ \s -> ListT $ return $ f s
+
+-- instance MonadBranch s (Brancher g s) where
+--   each :: [a] -> Brancher g s a
+--   each as = Brancher $ \s -> (map (,s) as,)
+--   branch :: (s -> [(a,s)]) -> Brancher g s a
+--   branch f = Brancher $ \s -> (f s,)
  
+interSeq :: Monad m => [BrancherT g s m a] -> BrancherT g s m [a]
+interSeq [] = return []
+interSeq (m:ms) = do
+  a <- m
+  as <- interSeq ms
+  return (a:as)
 
 
 -- instance MonadBrancher g s m => MonadBranch s m where
