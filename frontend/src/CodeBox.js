@@ -16,7 +16,7 @@ export function CodeBox({ value, onChange, language}) {
             value={value}
             onChange={onChange}
             theme="dark"
-            height="320px"
+            height="420px"
             extensions={[languages[language]]}
             // options={{
             //     theme: 'material',

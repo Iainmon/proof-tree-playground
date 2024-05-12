@@ -1,0 +1,199 @@
+`{X} friends-with {Y}` :-: friends({X},{Y}) ;
+[rule1] friends(iain,kassia) -: ;
+[rule2] friends(kassia,grace) -: ;
+[rule3] friends(grace,ron) -: ;
+[rule4] friends(ron,kelli) -: ;
+[rule5] friends({X},{Y}) -: friends({X},{Z}), friends({Z},{Y});
+[rule6] friends({X},{Y}) -: friends({Y},{X}) ;
+
+
+`{X} == {Y}` :-: eq({X},{Y}) ;
+[eq_refl] {X} == {X} -: ;
+[eq_fail] {X} == {Y} -: fail({X},{Y}) ;
+
+`{N} : nat` :-: is_num({N}) ;
+[nat_0] is_num(0) -: ;
+[nat_s] is_num(succ({N})) -: is_num({N}) ;
+
+`{N} < {M}` :-: less_than({N},{M}) ;
+[less_than_base]
+  {N} < succ({N}) 
+    -: {N} : nat;
+[less_than_succ]
+  {N} < succ({M})
+    -: {N} < {M} ;
+
+`{N} + {M} = {K}` :-: plus({N},{M},{K}) ;
+[plus_z_z] 
+  0 + 0 = 0 -: ;
+[plus_z_l] 
+  0 + succ({N}) = succ({N}) -: {N} : nat;
+[plus_z_r]
+  succ({N}) + 0 = succ({N}) -: {N} : nat;
+[plus_ss]
+  succ({N}) + succ({M}) = succ(succ({K})) 
+    -: {N} + {M} = {K} ;
+
+[pred_z] pred(0,0) -: ;
+[pred_succ] pred(succ({N}),{N}) -: {N} : nat;
+
+[my_query]
+  q({N},{N1},{N2}) -:
+    pred({N},{N1}), pred({N1},{N2}) ;
+
+`{N} - {M} = {K}` :-: minus({N},{M},{K}) ;
+[minus_z_z] 
+  0 - 0 = 0 -: ;
+[minus_z_r]
+  {N} - 0 = {N} -:
+    {N} : nat ;
+[minus_z_l] 
+  0 - {N} = 0 -: 
+    {N} : nat ;
+[minus_id]
+  succ({N}) - succ({M}) = {K} -: 
+    {N} - {M} = {K} ;
+
+
+`{N} * {M} = {K}` :-: mult({N},{M},{K}) ;
+[mult_0_0] 
+  0 * 0 = 0 -: ;
+[mult_0_l] 
+  0 * {N} = 0 -: {N} : nat;
+[mult_0_r] 
+  {N} * 0 = 0 -: {N} : nat;
+[mult_1_r] 
+  succ({N}) * 1 = succ({N}) -: ;
+[mult_1_l] 
+  1 * succ({N}) = succ({N}) -: ;
+[mult_s_s]
+  succ({N}) * succ({M}) = succ({K}) -:
+    {N} + {M} = {NpM},
+    {N} * {M} = {NM},
+    {NpM} + {NM} = {K} ;
+
+
+[square_1] square(1) -: ;
+[square_s] square({N}) -: 
+  {X} * {X} = {N} ;
+
+
+
+[factorial_0] 
+  factorial(0,1) -: ;
+[factorial_n]
+  factorial({N},{FN})
+    -: pred({N},{N1})
+     , factorial({N1},{FN1})
+     , {N} * {FN1} = {FN} ;
+
+
+{- lazy add. doesn't impose types on arguments. -}
+`add {M} {N} -> {K}` :-: add({M},{N},{K}) ;
+[better_add_0_l]
+  add(0,{N},{N}) -: ;
+[better_add_s_l]
+  add(succ({M}),{N},succ({K}))
+    -: add({M},{N},{K}) ;
+
+[fibonacci_helper] fibonacci_helper({N},{N1},{N2}) -: pred({N},{N1}), pred({N1},{N2}) ;
+
+
+[fibonacci_0]
+  fibonacci(0,1) -: ;
+[fibonacci_1]
+  fibonacci(1,1) -: ;
+[fibonacci_n]
+  fibonacci({N},{Fn})
+    -: 1 < {N}
+     , pred({N},{N1})
+     , pred({N1},{N2})
+     , fibonacci({N1},{Fn1})
+     , fibonacci({N2},{Fn2})
+     , add {Fn1} {Fn2} -> {Fn} ;
+
+
+`fib {N} -> {M}` :-: fib({N},{M}) ;
+
+[fib_0] fib 0 -> 1 -: ;
+[fib_1] fib 1 -> 1 -: ;
+[fib_2] fib 2 -> 2 -: ;
+[fib_s] fib succ(succ({N})) -> {M}
+  -:  {L} + {K} = {M}
+   ,  fib {N} -> {L}
+  ,  fib succ({N}) -> {K} ;
+
+[even_0] even(0) -: ;
+[even_s] even({N}) -: plus({M},2,{N}), even({M}) ;
+
+
+[fac_0]    fac(0,1) -: ;
+[fac_succ] fac(succ({N}),{M})
+  -: fac({N},{A})
+  ,  mult(succ({N}),{A},{M}) ;
+
+`{X} : list` :-: is_list({X}) ;
+[is_list_base] is_list(nil) -: ;
+[is_list_cons] is_list(cons({X},{XS})) -: is_list({XS}) ;
+
+`{A} ++ {B} = {C}` :-: append({A},{B},{C}) ;
+[append_nil] nil ++ {xs} = {xs} -: {xs} : list ;
+[append_cons]
+  cons({X},{XS}) ++ {YS} = cons({X},{ZS}) -:
+    {XS} ++ {YS} = {ZS} ;
+    
+
+[even_mul] even_mul({N}) -: mult(2,{X},{N});
+
+
+[graph_1] edge(a,b) -: ;
+[graph_2] edge(b,c) -: ;
+[graph_3] edge(d,a) -: ;
+[graph_4] edge(d,b) -: ;
+[graph_5] edge(b,e) -: ;
+[graph_6] edge(b,f) -: ;
+[graph_7] edge(c,f) -: ;
+[graph_8] edge(e,f) -: ;
+
+[path_base] path({A},{B}) -: edge({A},{B});
+[path_indu] path({A},{B}) -: edge({A},{C}), path({C},{B});
+
+[join] join({A},{B}) -: path({C},{A}), path({C},{B}); 
+
+
+`{E} ==> {V}` :-: eval({E},{V}) ;
+
+[eval_num] ENum({N}) ==> {N} -: is_num({N});
+[eval_neg] ENeg({E}) ==> neg({N}) -: {E} ==> {N} ;
+[eval_plus] EAdd({E1},{E2}) ==> {M}
+  -: {E1} ==> {N1}
+  ,  {E2} ==> {N2}
+  ,  plus({N1},{N2},{M}) ;
+[eval_mult] eval(EMul({E1},{E2}),{M}) 
+  -: eval({E1},{N1})
+  ,  eval({E2},{N2})
+  ,  mult({N1},{N2},{M}) ;
+
+
+`{X} in {Y}` :-: in({X},{Y}) ;
+
+[list_in_base] {X} in cons({X},{YS}) -: is_list({YS}) ;
+[list_in_cons] {X} in cons({Y},{YS}) -: {X} in {YS}, is_list({YS}) ;
+
+[lookup] lookup({K},{D},{V}) -: pair({K},{V}) in {D} ;
+
+`{G} |- {E} : {T}` :-: type({G},{E},{T}) ;
+
+[type_num] {G} |- ENum({N}) : TInt -: is_list({G}), is_num({N});
+[type_succ] type({G},ESucc({E}),TInt) -: {G} |- {E} : TInt ;
+[type_var] type({G},EVar({V}),{T}) -: lookup({V},{G},{T}) ;
+[type_pair] type({G},EPair({E1},{E2}),TPair({T1},{T2}))
+  -: type({G},{E1},{T1})
+  ,  type({G},{E2},{T2}) ;
+[type_let] type({G},ELetIn({V},{E1},{E2}),{T2}) 
+  -: type({G},{E1},{T1})
+  ,  type(cons(pair({V},{T1}),{G}),{E2},{T2}) ;
+
+
+
+

@@ -5,7 +5,7 @@
   "main": "none",
   "license": "UNLICENSED",
   "scripts": {
-    "watch-cabal": "nodemon --ext \"hs\" --watch app --watch src --exec \"cabal run server -O2\"",
+    "watch-cabal": "nodemon --ext \"hs\" --watch app --watch src --exec \"cabal run server\"",
     "run-server": "cabal run server || (sleep 10; yarn run run-server)"
   },
   "devDependencies": {

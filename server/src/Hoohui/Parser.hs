@@ -3,7 +3,7 @@ module Hoohui.Parser where
 
 import Logic.Unification.Basic
 
-import Text.Parsec hiding (runP)
+import Text.Parsec hiding (runP,spaces)
 import qualified Text.Parsec as P
 import Text.Parsec.Prim (setInput)
 -- import Text.Parsec.String (Parser)
@@ -44,6 +44,15 @@ brackets = enclosedIn (symbol '[') (symbol ']')
 
 parens :: Parser a -> Parser a
 parens = enclosedIn (symbol '(') (symbol ')')
+
+comment :: Parser ()
+comment = do
+  string "{-"
+  manyTill anyChar (string "-}")
+  return ()
+
+spaces :: Parser ()
+spaces = P.spaces >> (try (comment >> P.spaces) <|> P.spaces)
 
 nameParser :: Parser Name
 nameParser = do
@@ -199,6 +208,7 @@ mfTextSymbol = do
   lexeme $ many1 (letter <|> char '_' <|> char '-')
 
 
+allowedSymbols :: String
 allowedSymbols = ":,|-=+*/^&!<>~@#$%?"
 isSymbol s = all (`elem` allowedSymbols) s
 

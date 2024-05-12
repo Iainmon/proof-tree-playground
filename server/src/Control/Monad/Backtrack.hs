@@ -17,7 +17,9 @@ newtype Backtr g s a = Backtr { unBacktr :: StateT s (LogicT (State g)) a }
            , MonadLogic)
 
 instance Monad (Backtr g s) where
-  m >>= f = Backtr $ (unBacktr m) >>*- (unBacktr . f)
+  (>>=) :: Backtr g s a -> (a -> Backtr g s b) -> Backtr g s b
+  -- m >>= f = Backtr $ (unBacktr m) >>*- (unBacktr . f)
+  m >>= f = Backtr $ (unBacktr m) >>= (unBacktr . f)
   {-# INLINE (>>=) #-}
 
 allResults :: Backtr g s a -> s -> g -> ([(a, s)], g)
