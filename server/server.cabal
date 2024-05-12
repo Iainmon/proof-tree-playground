@@ -53,6 +53,8 @@ executable server
         Control.Monad.ForkT
         Control.Monad.MonadStatePlus
         Playground
+        Control.Monad.Backtrack
+        Control.Monad.State.LocalGlobal
 
 
     -- LANGUAGE extensions used by modules in this package.
@@ -77,6 +79,7 @@ executable server
         transformers,
         bytestring,
         general-unification,
+        logict
     
     hs-source-dirs:   
         app,

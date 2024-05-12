@@ -191,6 +191,8 @@ save f = ForkT $ \g s -> ([(a,s) | a <- f s],Just g)
 forkEach :: [a] -> ForkT g s a
 forkEach as = ForkT $ \g s -> ([(a,s) | a <- as],Just g)
 
+each = forkEach
+
 forkTake :: Int -> ForkT g s a -> ForkT g s a
 forkTake n frk = ForkT $ \g s -> 
   let ~(as,g') = runForkT frk g s in

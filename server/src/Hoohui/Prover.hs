@@ -7,20 +7,24 @@ import qualified Logic.Unification.Basic as U
 
 import Logic.Proof hiding (prove',prove,proofs)
 
-import Control.Monad.Branch
+-- import Control.Monad.Branch
 import Control.Monad.State
 import Control.Applicative ( Alternative((<|>), empty) )
 import Control.Monad (guard)
-import Control.Monad.MonadStatePlus
+-- import Control.Monad.MonadStatePlus
 
 -- import Data.Map.Strict (Map)
 -- import qualified Data.Map.Strict as Map
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Control.Monad.ListT
 
 
 import Hoohui.ProofMachine
 import Hoohui.Types
+import Control.Monad.Backtrack
+import Control.Monad.State.LocalGlobal
+import Control.Monad.Logic ((>>-))
 
 
 matchingRules :: HRuleSystem -> HTerm -> ProofMachine HRule
@@ -29,23 +33,24 @@ matchingRules rs t = do
   incDepth
   rs' <- instantiateRules rs
   let !rules = [r | r@(Rule _ c ps) <- rs', Just s <- [safeUnify t c], not $ any (=="fail") [f | Term f _ <- ps]]
+  -- if null rules then return (Rule "fail" (Var "fail") []) else choose rules
   guard $ not (null rules)
-  -- guard $ not $ any (\r -> or [f == "fail" | Term f _ <- premisesR r]) rules
-  each rules
-
+  -- -- guard $ not $ any (\r -> or [f == "fail" | Term f _ <- premisesR r]) rules
+  -- -- each rules
+  choose rules
 
 proofsPM :: HRuleSystem -> HTerm -> ProofMachine HProof
 proofsPM rs t' = do
-  t <- localGets substState >>= return . (t' <.)
+  t <- local (gets substState) >>= return . (t' <.)
   rule <- matchingRules rs t
   let rn = nameR rule
   let c = conclusionR rule
   let s' = unifyOne c t
   let group = map (apply s') (premisesR rule)
-  pfs <- sequence (map (proofsPMCached rs) group)
-  s'' <- localGets substState
+  pfs <- sequence  (map (proofsPMCached rs) group)
+  s'' <- local $ gets substState
   putSubst (s'' <.> s')
-  s <- localGets substState
+  s <- local $ gets substState
   let !j = (rn,t,t <. s)
   let !proof = Proof j pfs
   newProof (t <. s) proof
@@ -53,12 +58,14 @@ proofsPM rs t' = do
 
 proofsPMCached :: HRuleSystem -> HTerm -> ProofMachine HProof
 proofsPMCached rs t' = do
-  checkMaxDepth 100 -- 1000000
-  t <- localGets substState >>= return . (t' <.)
+  checkMaxDepth 100000 -- 1000000
+  t <- local (gets substState) >>= return . (t' <.)
   if hasFreeVars t then proofsPM rs t else do
-    kb <- globalGets (Map.lookup t . knowledgeBase)
+    kb <- global $ gets (Map.lookup t . knowledgeBase)
     case kb of
-      Just p -> return p
+      Just p -> do 
+        global $ modify (\g -> g { cacheHits = cacheHits g + 1 })
+        return p
       Nothing -> proofsPM rs t
 
 

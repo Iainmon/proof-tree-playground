@@ -50,9 +50,17 @@ latexNumber (Term f [t]) | f == "S" || f == "succ" = do
 latexNumber (Term f []) | f == "Z" || f == "zero" = Just 0
 latexNumber _ = Nothing
 
+latexList :: Term Name -> Maybe [Term Name]
+latexList (Term "nil" []) = Just []
+latexList (Term "cons" [x,xs]) = do
+  xs' <- latexList xs
+  return (x:xs')
+latexList _ = Nothing
+
 instance Latex (Term Name) where
   latex (Var v) = "\\mathcal{" ++ v ++ "}"
   latex t | Just s <- latexNumber t = "\\texttt{" ++ show s ++ "}"
+  latex t | Just ts <- latexList t = "\\texttt{[}" ++ intercalate ", " (map latex ts) ++ "\\texttt{]}"
   latex (Term f []) = "\\texttt{" ++ ru f ++ "}"
   latex (Term f ts) = "\\texttt{" ++ ru f ++ "(}" ++ "" ++ intercalate ", " (map latex ts) ++ "\\texttt{)}"
 
@@ -112,8 +120,14 @@ proveIO j@(EntailJ rs g r s) src q
         -- let (pf,pst) = proofs
         -- print $ map (fmtHJudgement . conclusion) $ Map.elems $ knowledgeBase pst
         -- print $ Map.size $ knowledgeBase gs
+        putStrLn "Meta-variables:"
         print $ metaVarCount pst
+        putStrLn "Depth:"
         print $ depthCounter pst
+        putStrLn "Knowledge Base:"
+        print $ Map.size $ knowledgeBase gs
+        putStrLn "Cache Hits:"
+        print $ cacheHits gs
         let fv = freeVars g
         let formattedProof = fmap (\(rn,j,j') -> (rn,if any (`elem`fv) (freeVars j) then j else j',j',mfSpecs)) pf
         performGC

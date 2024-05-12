@@ -5,7 +5,7 @@ import qualified Logic.Unification.Basic as U
 
 import Logic.Proof hiding (prove',prove,proofs)
 
-import Control.Monad.Branch
+-- import Control.Monad.Branch
 import Control.Monad.State
 import Control.Applicative ( Alternative((<|>), empty) )
 import Control.Monad (guard)
@@ -16,9 +16,11 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 
 import Hoohui.Types
-import Control.Monad.MonadStatePlus
-import Data.Functor.Identity (Identity(..))
-import Control.Monad.ListT (ListT(..))
+-- import Control.Monad.MonadStatePlus
+-- import Data.Functor.Identity (Identity(..))
+-- import Control.Monad.ListT
+import Control.Monad.Backtrack
+import Control.Monad.State.LocalGlobal
 
 
 data ProofState = ProofState 
@@ -32,19 +34,29 @@ type KnowledgeBase = Map HTerm HProof
 
 data GlobalState = GlobalState
   { knowledgeBase :: KnowledgeBase
+  , cacheHits :: Int
   } deriving (Show)
 
-type ProofMachine a = BrancherT GlobalState ProofState Identity a
+-- type ProofMachine a = BrancherT GlobalState ProofState Identity a
+-- type ProofMachine a = ForkT GlobalState ProofState a
+type ProofMachine a = Backtr GlobalState ProofState a
 
 type ProofResults a = [((a,ProofState),GlobalState)]
 
 runProofMachine :: ProofMachine a -> ProofResults a
-runProofMachine m = let ~(ls,_) = runIdentity $ (runStateT (runListT (runStateT (runBrancherT m') emptyPS)) emptyGS) in map fst ls
-  where m' = do
-                a <- m
-                s <- localGet
-                g <- globalGet
-                return ((a,s),g)
+runProofMachine m = let ~(ls,g) = manyResults 1 m emptyPS emptyGS in map (\(a,s) -> ((a,s),g)) ls
+-- runProofMachine m = let ~(ls,_) = runForkT (forkTake 1 m') emptyGS emptyPS in map fst ls
+--   where m' = do
+--                 a <- m
+--                 s <- localGet
+--                 -- g <- globalGet
+--                 return ((a,s),emptyGS)
+-- runProofMachine m = let ~(ls,_) = runIdentity $ (runStateT (runListT (runStateT (runBrancherT m') emptyPS)) emptyGS) in map fst ls
+--   where m' = do
+--                 a <- m
+--                 s <- localGet
+--                 g <- globalGet
+--                 return ((a,s),g)
 -- runProofMachine m = case flip (runBrancher m) emptyGS emptyPS of
 --   ((l:_),g) -> [(l,g)] -- let ~(lcs,g) = runBrancher m emptyPS emptyGS in map (\(a,s) -> ((a,s),g)) lcs
 --   _ -> []
@@ -55,44 +67,44 @@ emptyPS :: ProofState
 emptyPS = ProofState emptyS 0 [] 0
 
 emptyGS :: GlobalState
-emptyGS = GlobalState Map.empty
+emptyGS = GlobalState Map.empty 0
 
 putSubst :: HSubst -> ProofMachine ()
-putSubst s = localModify (\pst -> pst {substState = s})
+putSubst s = local $ modify (\pst -> pst {substState = s})
 
 getSubst :: ProofMachine HSubst
-getSubst = localGets substState
+getSubst = local $ gets substState
 
 modifySubst :: (HSubst -> HSubst) -> ProofMachine ()
 modifySubst f = do
-  s <- localGets substState
+  s <- local $ gets substState
   putSubst (f s)
 
 newMetaVar :: Name -> ProofMachine Name
 newMetaVar n = do
-  localModify (\pst -> pst {metaVarCount = metaVarCount pst + 1})
-  i <- localGets metaVarCount
+  local $ modify (\pst -> pst {metaVarCount = metaVarCount pst + 1})
+  i <- local $ gets metaVarCount
   let v = n ++ "_{" ++ show i ++ "}"
-  localModify (\pst -> pst {metaVars = v : metaVars pst})
+  local $ modify (\pst -> pst {metaVars = v : metaVars pst})
   return v
 
 incMetaVar :: ProofMachine Int
 incMetaVar = do
-  n <- localGets metaVarCount
-  localModify (\pst -> pst {metaVarCount = n + 1})
-  localGets metaVarCount
+  n <- local $ gets metaVarCount
+  local $ modify (\pst -> pst {metaVarCount = n + 1})
+  local $ gets metaVarCount
 
 incDepth :: ProofMachine ()
-incDepth = localModify (\pst -> pst {depthCounter = depthCounter pst + 1})
+incDepth = local $ modify (\pst -> pst {depthCounter = depthCounter pst + 1})
 
 newProof :: HTerm -> HProof -> ProofMachine ()
 newProof t _ | hasFreeVars t = return ()
 newProof t p = do
-  globalModify (\gs -> gs {knowledgeBase = Map.insert t p (knowledgeBase gs)})
+  global $ modify (\gs -> gs {knowledgeBase = Map.insert t p (knowledgeBase gs)})
 
 
 checkMaxDepth :: Int -> ProofMachine ()
 checkMaxDepth d = do
-  i <- localGets depthCounter
+  i <- local $ gets depthCounter
   -- i <- gets metaVarCount
   guard $ i < d

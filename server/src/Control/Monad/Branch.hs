@@ -28,7 +28,7 @@ import Control.Monad (MonadPlus(..))
 
 -- data Branch s a = Branch (s -> [(a,s)])
 
-import Control.Monad.ListT
+import Control.Monad.ListT hiding (each)
 import Control.Monad.MonadStatePlus
 
 
